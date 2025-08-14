@@ -1,36 +1,209 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sweets aus aller Welt - Next.js Website
 
-## Getting Started
+## 🍭 Über das Projekt
 
-First, run the development server:
+Eine moderne Next.js Website für einen Süßigkeiten-Shop mit umfassendem Tracking und Email-Marketing-Funnel.
 
+## ✨ Features
+
+- **📊 Umfassendes Tracking**: Google Analytics 4, Meta Pixel, TikTok Pixel
+- **🎯 Funnel-System**: Automatisches Tracking des Kundenverhaltens
+- **📧 Email Marketing**: Newsletter-Anmeldung mit Rabattcode
+- **🎨 Moderne UI**: Responsive Design mit Framer Motion Animationen
+- **🚀 Performance**: Optimiert für schnelle Ladezeiten
+- **📱 Mobile First**: Perfekt für TikTok/Instagram Traffic
+
+## 🛠 Installation
+
+1. **Projekt Setup**:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. **Environment Variables** (.env.local):
+```env
+NEXT_PUBLIC_GA_ID=G-XXXXXXXXXX
+NEXT_PUBLIC_META_PIXEL_ID=XXXXXXXXXX
+NEXT_PUBLIC_TIKTOK_PIXEL_ID=XXXXXXXXXX
+MAILCHIMP_API_KEY=your-mailchimp-api-key
+MAILCHIMP_LIST_ID=your-mailchimp-list-id
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. **Development Server**:
+```bash
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. **Production Build**:
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+## 📋 Setup-Anleitung
 
-To learn more about Next.js, take a look at the following resources:
+### 1. Tracking Pixel einrichten
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Google Analytics 4:**
+1. Gehe zu https://analytics.google.com
+2. Erstelle eine neue Property
+3. Kopiere die Measurement ID (G-XXXXXXXXXX)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Meta Pixel:**
+1. Gehe zu https://business.facebook.com
+2. Events Manager → Pixel erstellen
+3. Kopiere die Pixel ID
 
-## Deploy on Vercel
+**TikTok Pixel:**
+1. Gehe zu https://ads.tiktok.com
+2. Events Manager → Web Events → Pixel erstellen
+3. Kopiere die Pixel ID
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 2. Email Marketing Setup
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Mailchimp Integration:**
+1. Gehe zu https://mailchimp.com
+2. Account → Extras → API Keys
+3. Erstelle Audience und kopiere List ID
+
+**Alternative Services:**
+- ConvertKit
+- Klaviyo  
+- EmailOctopus
+- Brevo (Sendinblue)
+
+### 3. Domain & Hosting
+
+**Empfohlene Hosting-Optionen:**
+- Vercel (kostenlos für kleine Projekte)
+- Netlify
+- Railway
+- Heroku
+
+## 🎯 Funnel-Strategie
+
+### 1. Traffic-Quellen
+- **TikTok**: Kurze Videos mit Produkten
+- **Instagram**: Stories & Reels
+- **Facebook**: Targeted Ads
+
+### 2. Landing Page Optimierung
+- Starker Hero-Bereich mit Social Proof
+- Produktgalerie mit Bewertungen
+- Newsletter-Popup mit 15% Rabatt
+
+### 3. Email-Sequenz (nach Anmeldung)
+1. **Willkommens-Email**: 15% Rabattcode
+2. **Tag 3**: Produktempfehlungen
+3. **Tag 7**: Kundenbewertungen
+4. **Tag 14**: Limitiertes Angebot
+
+### 4. Retargeting
+- Website-Besucher ohne Kauf
+- Newsletter-Abonnenten ohne Kauf
+- Abandoned Cart Recovery
+
+## 📊 Tracking Events
+
+Die Website trackt automatisch:
+- **Seitenaufrufe**: Alle Seiten
+- **Produktinteresse**: Wishlist, Produktklicks
+- **Email-Anmeldung**: Newsletter Signup
+- **Käufe**: Add to Cart, Purchase
+
+## 🎨 Anpassungen
+
+### Design anpassen:
+```javascript
+// tailwind.config.js - Farben ändern
+colors: {
+  primary: {
+    500: '#dein-farbcode',
+  }
+}
+```
+
+### Produkte hinzufügen:
+```javascript
+// pages/index.js - sampleProducts Array erweitern
+const sampleProducts = [
+  {
+    id: 5,
+    name: "Dein Produkt",
+    description: "Beschreibung",
+    price: 9.99,
+    // ...
+  }
+];
+```
+
+### Newsletter-Service ändern:
+```javascript
+// pages/api/newsletter.js
+// Ersetze Mailchimp Code mit deinem Service
+```
+
+## 🚀 Go-Live Checklist
+
+- [ ] Alle API Keys eingetragen
+- [ ] Tracking Pixel getestet  
+- [ ] Newsletter-Integration funktional
+- [ ] Domain konfiguriert
+- [ ] SSL-Zertifikat aktiv
+- [ ] Google Search Console eingerichtet
+- [ ] Datenschutzerklärung aktualisiert
+- [ ] Impressum erstellt
+
+## 📈 Optimierung
+
+### Performance:
+- Bilder komprimieren (WebP Format)
+- Lazy Loading aktiviert
+- CDN für statische Assets
+
+### SEO:
+- Meta Tags optimiert
+- Schema Markup hinzufügen
+- Sitemap generieren
+
+### Conversion:
+- A/B Testing für CTA Buttons
+- Exit-Intent Popup
+- Social Proof verstärken
+
+## 🎬 Social Media Content Ideen
+
+### TikTok Videos:
+1. "Süßigkeiten aus aller Welt probieren"
+2. "Diese Snacks gibt es nur hier"
+3. "Unboxing internationaler Süßigkeiten"
+4. "Geschmackstest: Original vs. Deutsch"
+
+### Instagram Posts:
+1. Produktfotos mit Flaggen der Länder
+2. Behind-the-Scenes beim Verpacken
+3. Kundenbewertungen als Stories
+4. Reels mit süßen Momenten
+
+## 💡 Erweiterte Features
+
+### Für später:
+- **Affiliate Programm**: Influencer Marketing
+- **Subscription Box**: Monatliche Lieferungen  
+- **Gamification**: Punkte sammeln
+- **AR Filter**: TikTok/Instagram Integration
+- **Live Shopping**: Social Commerce
+
+## 🆘 Support
+
+Bei Fragen oder Problemen:
+1. Prüfe die Browser-Konsole auf Fehler
+2. Stelle sicher, dass alle API Keys korrekt sind
+3. Teste im Inkognito-Modus
+4. Prüfe die Network-Registerkarte für API-Aufrufe
+
+**Wichtige Dateien:**
+- `lib/tracking.js` - Alle Tracking-Funktionen
+- `lib/funnel.js` - Funnel-Logic
+- `components/NewsletterSignup.js` - Email-Erfassung
+- `pages/api/newsletter.js` - Backend für Newsletter
