@@ -163,55 +163,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Products Section */}
-      <section
-        id="products"
-        className="py-20 bg-gradient-to-br from-gray-50 to-white"
-      >
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-5xl font-black mb-4">
-              <span className="bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-                Bestseller 🔥
-              </span>
-            </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Diese Süßigkeiten gehen viral auf TikTok und sind bei unseren
-              Kunden absolute Favoriten!
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {sampleProducts.map((product, index) => (
-              <motion.div
-                key={product.id}
-                initial={{ opacity: 0, y: 50 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-              >
-                <ProductCard product={product} />
-              </motion.div>
-            ))}
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            className="text-center mt-12"
-          >
-            <button
-              onClick={() => trackEvent("view_more_products")}
-              className="bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold py-4 px-8 rounded-2xl hover:from-pink-600 hover:to-purple-700 transition-all transform hover:scale-105"
-            >
-              Alle Produkte anzeigen →
-            </button>
-          </motion.div>
-        </div>
-      </section>
 
       {/* Newsletter Section */}
       <section className="py-20 bg-gradient-to-br from-pink-50 to-purple-50">
@@ -395,41 +346,6 @@ export default function Home() {
           </div>
         </div>
       </footer>
-
-      {/* Newsletter Popup */}
-      {showNewsletter && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={() => setShowNewsletter(false)}
-        >
-          <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white rounded-3xl p-8 max-w-md w-full relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setShowNewsletter(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl"
-            >
-              ×
-            </button>
-
-            <div className="text-center mb-6">
-              <div className="text-6xl mb-4">🎁</div>
-              <h3 className="text-2xl font-bold mb-2">Warte!</h3>
-              <p className="text-gray-600">
-                Bevor du gehst - sichere dir 15% Rabatt auf deine erste
-                Bestellung!
-              </p>
-            </div>
-
-            <NewsletterSignup />
-          </motion.div>
-        </motion.div>
-      )}
     </>
   );
 }

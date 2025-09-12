@@ -1,39 +1,53 @@
-// components/NewsletterSignup.js
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { useForm } from 'react-hook-form';
-import { Mail, Gift, Star } from 'lucide-react';
-import { FunnelTracker } from '../../lib/funnel';
-import { trackEvent } from '../../lib/tracking';
+"use client";
 
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { useForm } from "react-hook-form";
+import { Mail, Gift, Star } from "lucide-react";
+import { FunnelTracker } from "../../lib/funnel";
+import { trackEvent } from "../../lib/tracking";
 
-export default function NewsletterSignup() {
+// Typdefinition entfernt, stattdessen JSDoc für Klarheit:
+/**
+ * @typedef {Object} FormValues
+ * @property {string} email
+ * @property {string} [firstName]
+ * @property {string} [source]
+ */
+
+export default function NewsletterSignup({ source = "standard" }) {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [serverError, setServerError] = useState(null);
+
   const { register, handleSubmit, formState: { errors } } = useForm();
   const funnel = new FunnelTracker();
 
   const onSubmit = async (data) => {
     setIsLoading(true);
-    
-    try {
-      // Track email capture
-      funnel.trackEmailCapture(data.email);
-      trackEvent('lead', { email: data.email });
+    setServerError(null);
 
-      // API Call zum Newsletter Service
-      const response = await fetch('/api/newsletter', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+    try {
+      funnel.trackEmailCapture(data.email);
+      trackEvent("lead", { email: data.email });
+
+      const res = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...data, source }),
       });
 
-      if (response.ok) {
-        setIsSubmitted(true);
-        trackEvent('complete_registration', { method: 'newsletter' });
+      const payload = await res.json();
+
+      if (!res.ok) {
+        setServerError(payload?.error || payload?.message || "Etwas ist schiefgelaufen.");
+        return;
       }
-    } catch (error) {
-      console.error('Newsletter signup error:', error);
+
+      setIsSubmitted(true);
+      trackEvent("complete_registration", { method: "newsletter", source });
+    } catch (e) {
+      setServerError(e?.message || "Netzwerkfehler.");
     } finally {
       setIsLoading(false);
     }
@@ -48,9 +62,13 @@ export default function NewsletterSignup() {
       >
         <div className="text-4xl mb-4">🎉</div>
         <h3 className="text-2xl font-bold mb-2">Willkommen in der Sweet Community!</h3>
-        <p className="mb-4">Du erhältst gleich eine Bestätigungs-E-Mail mit deinem 15% Rabattcode!</p>
+        <p className="mb-4">
+          Du erhältst gleich eine Bestätigungs-E-Mail
+          {/* Tipp: für Double-Opt-In auf „pending“ umstellen, siehe API */}
+          {` mit deinem 15% Rabattcode!`}
+        </p>
         <div className="bg-white/20 p-3 rounded-lg">
-          <p className="text-sm font-medium">📧 Prüfe dein E-Mail Postfach</p>
+          <p className="text-sm font-medium">📧 Prüfe dein E-Mail-Postfach</p>
         </div>
       </motion.div>
     );
@@ -94,28 +112,27 @@ export default function NewsletterSignup() {
           <input
             type="email"
             placeholder="Deine E-Mail Adresse"
-            {...register('email', { 
-              required: 'E-Mail ist erforderlich',
-              pattern: {
-                value: /\S+@\S+\.\S+/,
-                message: 'Ungültige E-Mail Adresse'
-              }
+            {...register("email", {
+              required: "E-Mail ist erforderlich",
+              pattern: { value: /\S+@\S+\.\S+/, message: "Ungültige E-Mail Adresse" },
             })}
             className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-pink-500 focus:outline-none transition-colors"
           />
-          {errors.email && (
-            <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
-          )}
+          {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
         </div>
 
         <div>
           <input
             type="text"
             placeholder="Dein Vorname (optional)"
-            {...register('firstName')}
+            {...register("firstName")}
             className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-pink-500 focus:outline-none transition-colors"
           />
         </div>
+
+        {serverError && (
+          <p className="text-red-600 text-sm">{serverError}</p>
+        )}
 
         <motion.button
           whileHover={{ scale: 1.02 }}
@@ -130,13 +147,13 @@ export default function NewsletterSignup() {
               Anmeldung läuft...
             </span>
           ) : (
-            '🎁 Jetzt 15% Rabatt sichern!'
+            "🎁 Jetzt 15% Rabatt sichern!"
           )}
         </motion.button>
       </form>
 
       <p className="text-xs text-gray-500 mt-4 text-center">
-        Mit der Anmeldung stimmst du unseren{' '}
+        Mit der Anmeldung stimmst du unseren{" "}
         <a href="/datenschutz" className="underline">Datenschutzbestimmungen</a> zu.
         Abmeldung jederzeit möglich.
       </p>
