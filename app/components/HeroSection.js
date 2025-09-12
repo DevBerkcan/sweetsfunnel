@@ -210,13 +210,20 @@ export default function HeroSection({ onCTAClick }) {
               transition={{ duration: s.duration, repeat: Infinity, ease: "linear", delay: s.delay }}
               style={{ left: `${s.leftPct}%`, top: "-100px" }}
             >
-              <img
-                src={sweetImages[i % sweetImages.length]}
-                alt="Süßigkeit"
-                className="w-28 h-28 md:w-40 md:h-40 shadow-xl opacity-90 object-cover"
-                loading="lazy"
-                decoding="async"
-              />
+        <img
+          src={sweetImages[i % sweetImages.length]}
+          alt="Süßigkeit"
+          className="w-24 h-24 md:w-32 md:h-32"
+          style={{
+            filter: "drop-shadow(0 4px 16px rgba(236,72,153,0.18))",
+            objectFit: "contain",
+            background: "transparent",
+            borderRadius: "50%",
+            pointerEvents: "none",
+          }}
+          loading="lazy"
+          decoding="async"
+        />
             </motion.div>
           ))}
         </div>
