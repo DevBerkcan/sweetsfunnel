@@ -4,14 +4,13 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Mail } from "lucide-react";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
-import { FunnelTracker } from "@/lib/funnel";
-import { trackEvent } from "@/lib/tracking";
+import { FunnelTracker } from "../../lib/funnel";
+import { trackEvent } from "../../lib/tracking";
 import Image from "next/image";
 
 export default function HeroSection({ onCTAClick }) {
   const [step, setStep] = useState("email");
   const [emailSaved, setEmailSaved] = useState("");
-
   const [isLoading, setIsLoading] = useState(false);
   const [vh, setVh] = useState(800);
   const [particleCount, setParticleCount] = useState(14);
@@ -49,14 +48,18 @@ export default function HeroSection({ onCTAClick }) {
   const funnel = useMemo(() => new FunnelTracker(), []);
 
   useEffect(() => {
-    const updateVh = () => setVh(typeof window !== "undefined" ? window.innerHeight : 800);
+    if (typeof window === 'undefined') return;
+    
+    const updateVh = () => setVh(window.innerHeight);
     updateVh();
     window.addEventListener("resize", updateVh);
 
     const mq = window.matchMedia("(max-width: 640px)");
     const setCount = () => setParticleCount(mq.matches ? 8 : 14);
     setCount();
-    mq.addEventListener?.("change", setCount);
+    if (mq.addEventListener) {
+      mq.addEventListener("change", setCount);
+    }
 
     offerIntervalRef.current = setInterval(() => {
       setCurrentOfferIndex((prev) => (prev + 1) % offers.length);
@@ -64,17 +67,25 @@ export default function HeroSection({ onCTAClick }) {
 
     setRemainingSpots(Math.floor(Math.random() * 81) + 20);
 
-    const focusTimer = setTimeout(() => setEmailFocus("email"), 600);
+    const focusTimer = setTimeout(() => {
+      if (step === "email") {
+        setEmailFocus("email");
+      } else if (step === "name") {
+        setNameFocus("firstName");
+      }
+    }, 600);
 
     return () => {
       window.removeEventListener("resize", updateVh);
-      mq.removeEventListener?.("change", setCount);
+      if (mq.removeEventListener) {
+        mq.removeEventListener("change", setCount);
+      }
       if (offerIntervalRef.current) clearInterval(offerIntervalRef.current);
       clearTimeout(focusTimer);
     };
-  }, [offers.length, setEmailFocus]);
+  }, [offers.length, setEmailFocus, setNameFocus, step]);
 
-  // Deko-Partikel
+  // Deko-Partikel - deterministische Seeds
   const seeds = useMemo(() => {
     return Array.from({ length: particleCount }).map((_, i) => {
       const rng = (x) => {
@@ -90,6 +101,7 @@ export default function HeroSection({ onCTAClick }) {
     });
   }, [particleCount]);
 
+  // Deine fallenden Bilder
   const sweetImages = ["/test.svg", "/test.svg", "/test.svg"];
 
   const getUTMParameter = (param) => {
@@ -100,7 +112,7 @@ export default function HeroSection({ onCTAClick }) {
 
   const currentOffer = offers[currentOfferIndex];
 
-  // STEP 1: E-Mail absenden -> Mailchimp upsert (status_if_new: subscribed/pending)
+  // STEP 1: E-Mail absenden
   const onSubmitEmail = async (data) => {
     if (isLoading || submittedRef.current) return;
     setIsLoading(true);
@@ -119,11 +131,13 @@ export default function HeroSection({ onCTAClick }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: data.email,
+          firstName: "", // Leer für Step 1
           source: "hero_offer",
           offer: currentOffer.title,
           utm_source: getUTMParameter("utm_source") || "direct",
           utm_medium: getUTMParameter("utm_medium") || "organic",
           utm_campaign: getUTMParameter("utm_campaign") || "default",
+          statusIfNew: "subscribed", // Oder "pending" für Double-Opt-In
         }),
       });
 
@@ -131,7 +145,7 @@ export default function HeroSection({ onCTAClick }) {
 
       setEmailSaved(data.email);
       setStep("name");
-      setTimeout(() => setNameFocus("firstName"), 350);
+      submittedRef.current = false; // Reset für nächsten Step
 
       trackEvent("newsletter_email_captured", {
         method: "hero_section",
@@ -147,26 +161,39 @@ export default function HeroSection({ onCTAClick }) {
     }
   };
 
-  // STEP 2: Name absenden -> Mailchimp Update (PUT) FNAME
+  // STEP 2: Name absenden - auch als POST (deine API macht intern PUT)
   const onSubmitName = async (data) => {
     if (!emailSaved) return;
     setIsLoading(true);
+    
     try {
       const res = await fetch("/api/newsletter", {
-        method: "POST",
+        method: "POST", // Deine API erwartet POST
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: emailSaved,
           firstName: data.firstName,
           source: "hero_offer",
           offer: currentOffer.title,
+          utm_source: getUTMParameter("utm_source") || "direct",
+          utm_medium: getUTMParameter("utm_medium") || "organic", 
+          utm_campaign: getUTMParameter("utm_campaign") || "default",
+          statusIfNew: "subscribed", // Wichtig: Status beibehalten
         }),
       });
 
-      if (!res.ok) throw new Error("Update failed");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Update failed");
+      }
 
       setStep("done");
-      trackEvent("complete_registration", { method: "newsletter", value: 1.0, currency: "EUR" });
+      trackEvent("complete_registration", { 
+        method: "newsletter", 
+        value: 1.0, 
+        currency: "EUR",
+        offer: currentOffer.title.toLowerCase()
+      });
     } catch (error) {
       console.error("Name update error:", error);
       trackEvent("form_error", { type: "newsletter_signup_name", error: error.message });
@@ -179,18 +206,31 @@ export default function HeroSection({ onCTAClick }) {
   if (step === "done") {
     return (
       <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-green-100 via-emerald-50 to-teal-100">
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center max-w-2xl mx-auto px-4">
-          <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 1.5, repeat: Infinity }} className="text-8xl mb-6" aria-hidden>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }} 
+          animate={{ opacity: 1, scale: 1 }} 
+          className="text-center max-w-2xl mx-auto px-4"
+        >
+          <motion.div 
+            animate={{ scale: [1, 1.1, 1] }} 
+            transition={{ duration: 1.5, repeat: Infinity }} 
+            className="text-8xl mb-6" 
+            aria-hidden
+          >
             🎉
           </motion.div>
           <h1 className="text-5xl md:text-7xl font-black mb-6">
-            <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">WILLKOMMEN!</span>
+            <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+              WILLKOMMEN!
+            </span>
           </h1>
           <p className="text-2xl md:text-3xl text-gray-700 mb-8">
             Deine <strong>{currentOffer.title}</strong> ist unterwegs! {currentOffer.emoji}
           </p>
           <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-xl">
-            <p className="text-lg text-gray-600 mb-1">📧 Prüfe dein Postfach für Details & deinen exklusiven Rabattcode!</p>
+            <p className="text-lg text-gray-600 mb-1">
+              📧 Prüfe dein Postfach für Details & deinen exklusiven Rabattcode!
+            </p>
             <p className="text-sm text-gray-500">Bitte auch den Spam-Ordner prüfen.</p>
           </div>
         </motion.div>
@@ -200,110 +240,168 @@ export default function HeroSection({ onCTAClick }) {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-100 via-purple-50 to-indigo-100 overflow-hidden">
+      {/* Fallende Bilder */}
       {!prefersReducedMotion && (
         <div className="absolute inset-0 pointer-events-none">
           {seeds.map((s, i) => (
             <motion.div
               key={i}
               className="absolute"
-              animate={{ y: [0, vh + 100], x: [0, s.xDrift], rotate: [0, 360] }}
-              transition={{ duration: s.duration, repeat: Infinity, ease: "linear", delay: s.delay }}
-              style={{ left: `${s.leftPct}%`, top: "-100px" }}
+              animate={{ 
+                y: [-100, vh + 100], 
+                x: [0, s.xDrift], 
+                rotate: [0, 360] 
+              }}
+              transition={{ 
+                duration: s.duration, 
+                repeat: Infinity, 
+                ease: "linear", 
+                delay: s.delay 
+              }}
+              style={{ 
+                left: `${s.leftPct}%`, 
+                top: "-100px" 
+              }}
             >
-        <img
-          src={sweetImages[i % sweetImages.length]}
-          alt="Süßigkeit"
-          className="w-24 h-24 md:w-32 md:h-32"
-          style={{
-            filter: "drop-shadow(0 4px 16px rgba(236,72,153,0.18))",
-            objectFit: "contain",
-            background: "transparent",
-            borderRadius: "50%",
-            pointerEvents: "none",
-          }}
-          loading="lazy"
-          decoding="async"
-        />
+              <img
+                src={sweetImages[i % sweetImages.length]}
+                alt="Süßigkeit"
+                className="w-40 h-40 md:w-40 md:h-40 opacity-80 object-cover rounded-lg"
+                loading="lazy"
+                decoding="async"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  console.log('Bild konnte nicht geladen werden:', e.target.src);
+                }}
+              />
             </motion.div>
           ))}
         </div>
       )}
 
       <div className="container mx-auto px-4 text-center relative z-10">
-        {/* Brand Head */}
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="flex justify-center mb-12 mt-6">
-          <div className="bg-white/90 dark:bg-white/80 backdrop-blur-sm px-6 py-5 md:px-8 md:py-6 rounded-2xl shadow-xl border border-pink-200/70 inline-flex items-center gap-5">
-            <div className="relative w-20 h-20 md:w-24 md:h-24 rounded-xl ring-4 ring-white/70 overflow-hidden">
-              <Image src="/sweeetts.svg" alt="Sweets aus aller Welt – Logo" fill priority className="object-contain drop-shadow-md" sizes="(max-width: 768px) 80px, 96px" />
-            </div>
+        {/* Logo mittig */}
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ duration: 0.6 }} 
+          className="flex justify-center mb-8"
+        >
+          <div className="relative w-20 h-20 md:w-24 md:h-24">
+            <Image
+              src="/sweeetts.svg"
+              alt="Sweets aus aller Welt – Logo"
+              fill
+              priority
+              className="object-contain drop-shadow-lg"
+              sizes="(max-width: 768px) 80px, 96px"
+              onError={(e) => {
+                console.log('Logo konnte nicht geladen werden');
+              }}
+            />
           </div>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-          {/* Social Proof */}
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-2 bg-white/90 px-4 py-2 rounded-full mb-6 shadow-lg">
+        <motion.div 
+          initial={{ opacity: 0, y: 50 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          transition={{ duration: 0.8 }}
+        >
+          {/* Social Proof Badge */}
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            className="inline-flex items-center gap-3 bg-white/95 backdrop-blur-sm px-6 py-3 rounded-full mb-8 shadow-lg border border-pink-100"
+          >
             <div className="flex -space-x-2" aria-hidden>
               {[1, 2, 3].map((i) => (
-                <div key={i} className="w-6 h-6 bg-pink-500 rounded-full border-2 border-white" />
+                <div 
+                  key={i} 
+                  className="w-7 h-7 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full border-2 border-white shadow-sm" 
+                />
               ))}
             </div>
-            <span className="font-bold text-gray-800">Über 50.000 zufriedene Kunden</span>
+            <span className="font-bold text-gray-800 text-lg">Über 50.000 zufriedene Kunden 🤩</span>
           </motion.div>
 
-          {/* Headline */}
-          <div className="mb-8">
-            <motion.h2 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="text-3xl md:text-5xl font-black mb-6 leading-tight">
-              <span className="bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">Der süßesten Community der Welt beitreten</span>
-              <br />
-              <span className="text-3xl md:text-4xl text-gray-800">
-                – & gratis <span className="text-amber-600 font-bold">{currentOffer.title}</span> sichern {currentOffer.emoji}
+          {/* Main Headline */}
+          <div className="mb-10">
+            <motion.h1 
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              transition={{ delay: 0.2 }} 
+              className="text-4xl md:text-6xl lg:text-7xl font-black mb-6 leading-tight"
+            >
+              <span className="bg-gradient-to-r from-pink-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                SÜSSIGKEITEN
               </span>
-            </motion.h2>
+              <br />
+              <span className="text-gray-800">aus aller</span>
+              <br />
+              <span className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 bg-clip-text text-transparent">
+                WELT! 🌍
+              </span>
+            </motion.h1>
 
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }} className="bg-gradient-to-r from-amber-400 to-orange-500 text-white px-6 py-3 rounded-2xl inline-block mb-4">
-              <span className="font-bold text-lg">🔥 EXKLUSIV: Nur für die ersten {remainingSpots} Community-Mitglieder!</span>
-            </motion.div>
-
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-xl md:text-2xl text-gray-700 font-semibold">
-              Die ersten 100 Anmeldungen erhalten eine <span className="text-amber-600 font-bold">kostenlose Dubai-Schokolade</span> zugeschickt! 🚀
+            <motion.p 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              transition={{ delay: 0.4 }} 
+              className="text-xl md:text-2xl text-gray-700 font-semibold mb-6"
+            >
+              Geliebt auf TikTok, Instagram und mehr – schließ dich der Community an!
             </motion.p>
+
+           
           </div>
 
-          {/* FORM STEP SWITCH */}
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="max-w-2xl mx-auto mb-8">
-            <div className="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-xl border-2 border-pink-200">
+          {/* MULTI-STEP FORM */}
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={{ delay: 0.8 }} 
+            className="max-w-2xl mx-auto mb-10"
+          >
+            <div className="bg-white/95 backdrop-blur-sm p-8 rounded-3xl shadow-2xl border border-pink-100">
+              
+              {/* STEP 1: EMAIL */}
               {step === "email" && (
                 <>
-                  <h3 className="text-2xl font-bold text-gray-800 mb-4">🎁 Jetzt anmelden und gratis Dubai-Schokolade sichern! 🍫</h3>
-                  <form onSubmit={handleSubmitEmail(onSubmitEmail)} className="space-y-4" noValidate>
-                    <div className="flex flex-col sm:flex-row gap-3">
+                  <h3 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6">
+                    🎁 Deine süße Reise beginnt hier!
+                  </h3>
+                  <form onSubmit={handleSubmitEmail(onSubmitEmail)} className="space-y-5" noValidate>
+                    <div className="flex flex-col sm:flex-row gap-4">
                       <div className="flex-1">
                         <input
                           type="email"
                           inputMode="email"
                           autoComplete="email"
-                          placeholder="Deine E-Mail für gratis Dubai-Schokolade"
+                          placeholder="Deine E-Mail für gratis Dubai-Schokolade 🍫"
                           aria-invalid={!!emailErrors.email}
                           aria-describedby={emailErrors.email ? "email-error" : undefined}
                           {...registerEmail("email", {
                             required: "E-Mail ist erforderlich",
-                            pattern: { value: /\S+@\S+\.\S+/, message: "Bitte gib eine gültige E-Mail Adresse ein" },
+                            pattern: { 
+                              value: /\S+@\S+\.\S+/, 
+                              message: "Bitte gib eine gültige E-Mail Adresse ein" 
+                            },
                           })}
-                          className="w-full px-6 py-4 text-lg border-2 border-gray-200 rounded-2xl focus:border-pink-500 focus:outline-none transition-colors"
+                          className="w-full px-6 py-5 text-lg border-2 border-gray-200 rounded-2xl focus:border-pink-500 focus:outline-none transition-all duration-300 shadow-sm"
                         />
                         {emailErrors.email && (
-                          <p id="email-error" className="text-red-500 text-sm mt-1 text-left">
+                          <p id="email-error" className="text-red-500 text-sm mt-2 text-left">
                             {emailErrors.email.message}
                           </p>
                         )}
                       </div>
 
                       <motion.button
-                        whileHover={{ scale: isLoading ? 1 : 1.05 }}
-                        whileTap={{ scale: isLoading ? 1 : 0.95 }}
+                        whileHover={{ scale: isLoading ? 1 : 1.02 }}
+                        whileTap={{ scale: isLoading ? 1 : 0.98 }}
                         type="submit"
                         disabled={isLoading}
-                        className="bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold py-4 px-8 rounded-2xl shadow-xl hover:from-pink-600 hover:to-purple-700 transition-all flex items-center justify-center gap-3 disabled:opacity-70 whitespace-nowrap min-w-[180px]"
+                        className="bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold py-5 px-10 rounded-2xl shadow-xl hover:shadow-2xl hover:from-pink-600 hover:to-purple-700 transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-70 whitespace-nowrap min-w-[200px]"
                       >
                         {isLoading ? (
                           <>
@@ -313,55 +411,88 @@ export default function HeroSection({ onCTAClick }) {
                         ) : (
                           <>
                             <Mail className="w-6 h-6" aria-hidden />
-                            Jetzt sichern
+                            Jetzt beitreten
                           </>
                         )}
                       </motion.button>
                     </div>
                   </form>
-                  <p className="text-xs text-gray-500 mt-3">🔒 Wir behandeln deine Daten vertraulich. Abmeldung jederzeit möglich.</p>
+                  <p className="text-sm text-gray-500 mt-4 text-center">
+                    🔒 100% kostenlos • Jederzeit abbestellbar • Keine Spam-Mails
+                  </p>
                 </>
               )}
 
+              {/* STEP 2: NAME */}
               {step === "name" && (
                 <>
-                  <h3 className="text-2xl font-bold text-gray-800 mb-2">Fast geschafft! 🎉</h3>
-                  <p className="text-gray-600 mb-4">Wie dürfen wir dich ansprechen?</p>
-                  <form onSubmit={handleSubmitName(onSubmitName)} className="space-y-4" noValidate>
-                    <input
-                      type="text"
-                      placeholder="Dein Vorname"
-                      autoComplete="given-name"
-                      {...registerName("firstName", { required: "Bitte gib deinen Vornamen ein" })}
-                      className="w-full px-6 py-4 text-lg border-2 border-gray-200 rounded-2xl focus:border-pink-500 focus:outline-none transition-colors"
-                    />
-                    {nameErrors.firstName && (
-                      <p className="text-red-500 text-sm text-left">{nameErrors.firstName.message}</p>
-                    )}
+                  <div className="text-center mb-6">
+                    <div className="text-4xl mb-3">🎉</div>
+                    <h3 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
+                      Fast geschafft!
+                    </h3>
+                    <p className="text-gray-600 text-lg">
+                      Wie dürfen wir dich ansprechen?
+                    </p>
+                  </div>
+                  
+                  <form onSubmit={handleSubmitName(onSubmitName)} className="space-y-5" noValidate>
+                    <div>
+                      <input
+                        type="text"
+                        placeholder="Dein Vorname"
+                        autoComplete="given-name"
+                        {...registerName("firstName", { 
+                          required: "Bitte gib deinen Vornamen ein",
+                          minLength: { value: 2, message: "Mindestens 2 Zeichen" }
+                        })}
+                        className="w-full px-6 py-5 text-lg border-2 border-gray-200 rounded-2xl focus:border-pink-500 focus:outline-none transition-all duration-300 shadow-sm"
+                      />
+                      {nameErrors.firstName && (
+                        <p className="text-red-500 text-sm mt-2 text-left">
+                          {nameErrors.firstName.message}
+                        </p>
+                      )}
+                    </div>
 
                     <motion.button
-                      whileHover={{ scale: isLoading ? 1 : 1.03 }}
-                      whileTap={{ scale: isLoading ? 1 : 0.97 }}
+                      whileHover={{ scale: isLoading ? 1 : 1.02 }}
+                      whileTap={{ scale: isLoading ? 1 : 0.98 }}
                       type="submit"
                       disabled={isLoading}
-                      className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold py-4 px-6 rounded-2xl hover:from-pink-600 hover:to-purple-700 transition-all disabled:opacity-70"
+                      className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold py-5 px-6 rounded-2xl shadow-xl hover:shadow-2xl hover:from-pink-600 hover:to-purple-700 transition-all duration-300 disabled:opacity-70"
                     >
-                      {isLoading ? "Speichere..." : "Weiter"}
+                      {isLoading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent inline-block mr-2" />
+                          Speichere...
+                        </>
+                      ) : (
+                        "Dubai-Schokolade sichern! 🍫"
+                      )}
                     </motion.button>
                   </form>
-                  <p className="text-xs text-gray-500 mt-3">Optional, aber hilft uns bei der persönlichen Ansprache.</p>
+                  
+                  <p className="text-sm text-gray-500 mt-4 text-center">
+                    Optional, aber hilft uns bei der persönlichen Ansprache.
+                  </p>
                 </>
               )}
             </div>
           </motion.div>
 
-          {/* Countdown */}
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }} className="bg-amber-100 border border-amber-300 rounded-2xl p-4 mb-8 max-w-md mx-auto">
-            <div className="flex items-center justify-center gap-2">
-              <div className="w-4 h-4 bg-amber-500 rounded-full animate-pulse" aria-hidden />
-              <p className="text-amber-800 font-semibold">Noch {remainingSpots} von 100 Gratis-Schokoladen verfügbar!</p>
-            </div>
-          </motion.div>
+
+           {/* Exklusiv-Angebot */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }} 
+              animate={{ opacity: 1, scale: 1 }} 
+              transition={{ delay: 0.6 }} 
+              className="bg-gradient-to-r from-amber-400 to-orange-500 text-white px-8 py-4 rounded-2xl inline-block mb-6 shadow-xl"
+            >
+              <span className="font-bold text-xl">
+                🔥 GRATIS: {currentOffer.title} für die ersten {remainingSpots} Anmeldungen!
+              </span>
+            </motion.div>
         </motion.div>
       </div>
     </div>

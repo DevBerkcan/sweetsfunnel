@@ -4,9 +4,10 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Head from "next/head";
 import HeroSection from "./components/HeroSection";
-import ProductCard from "./components/ProductCard";
+import StepByStepGuide from "./components/StepByStepGuide";
 import NewsletterSignup from "./components/NewsletterSignup";
 
+// Sample Products für später (falls du noch eine Produkt-Sektion hinzufügst)
 const sampleProducts = [
   {
     id: 1,
@@ -52,9 +53,8 @@ const sampleProducts = [
   },
 ];
 
-function trackEvent(eventName: string) {
+function trackEvent(eventName: any) {
   // Placeholder for analytics event tracking
-  // e.g., window.gtag?.('event', eventName);
   console.log(`Event tracked: ${eventName}`);
 }
 
@@ -67,7 +67,7 @@ export default function Home() {
       setShowNewsletter(true);
     }, 30000);
 
-    const handleMouseLeave = (e: MouseEvent) => {
+    const handleMouseLeave = (e: { clientY: number; }) => {
       if (e.clientY <= 0) {
         setShowNewsletter(true);
       }
@@ -81,8 +81,8 @@ export default function Home() {
     };
   }, []);
 
-  const scrollToProducts = () => {
-    document.getElementById("products")?.scrollIntoView({ behavior: "smooth" });
+  const scrollToHero = () => {
+    document.getElementById("hero-section")?.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
@@ -111,9 +111,127 @@ export default function Home() {
       </Head>
 
       {/* Hero Section */}
-      <HeroSection onCTAClick={scrollToProducts} />
+      <div id="hero-section">
+        <HeroSection onCTAClick={scrollToHero} />
+      </div>
 
-  
+      {/* Step by Step Guide - NEU HINZUGEFÜGT */}
+      <StepByStepGuide />
+
+      {/* Trust Indicators */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              className="space-y-2"
+            >
+              <div className="text-4xl">🚚</div>
+              <h3 className="font-bold text-gray-800">Kostenloser Versand</h3>
+              <p className="text-gray-600 text-sm">ab 29€ Bestellwert</p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="space-y-2"
+            >
+              <div className="text-4xl">⭐</div>
+              <h3 className="font-bold text-gray-800">4.9/5 Sterne</h3>
+              <p className="text-gray-600 text-sm">über 5.000 Bewertungen</p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="space-y-2"
+            >
+              <div className="text-4xl">🔒</div>
+              <h3 className="font-bold text-gray-800">Sicher bezahlen</h3>
+              <p className="text-gray-600 text-sm">PayPal, Klarna & mehr</p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="space-y-2"
+            >
+              <div className="text-4xl">📱</div>
+              <h3 className="font-bold text-gray-800">TikTok Viral</h3>
+              <p className="text-gray-600 text-sm">Millionen Views</p>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Newsletter Section */}
+      <section className="py-20 bg-gradient-to-br from-pink-50 to-purple-50">
+        <div className="container mx-auto px-4">
+          <div className="max-w-2xl mx-auto">
+            <NewsletterSignup />
+          </div>
+        </div>
+      </section>
+
+      {/* Social Proof */}
+      <section className="py-16 bg-white">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold mb-8">
+            Was unsere Kunden sagen 💕
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              {
+                name: "Sarah, 24",
+                text: "Die japanischen Kit-Kats sind einfach unglaublich! Schmecken genau wie im TikTok Video 😍",
+                rating: 5,
+                platform: "TikTok",
+              },
+              {
+                name: "Mike, 19",
+                text: "Mega schnelle Lieferung und die Sour Patch Kids sind original aus den USA. Top!",
+                rating: 5,
+                platform: "Instagram",
+              },
+              {
+                name: "Lisa, 22",
+                text: "Endlich kann ich alle Süßigkeiten probieren, die ich auf Social Media sehe. Danke!",
+                rating: 5,
+                platform: "TikTok",
+              },
+            ].map((review, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, scale: 0.9 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                transition={{ delay: index * 0.1 }}
+                className="bg-gradient-to-br from-white to-gray-50 p-6 rounded-2xl shadow-lg"
+              >
+                <div className="flex justify-center mb-3">
+                  {[...Array(review.rating)].map((_, i) => (
+                    <span key={i} className="text-yellow-400 text-xl">
+                      ⭐
+                    </span>
+                  ))}
+                </div>
+                <p className="text-gray-700 mb-4 italic">"{review.text}"</p>
+                <div className="flex items-center justify-center gap-2">
+                  <span className="font-bold text-gray-800">{review.name}</span>
+                  <span className="text-sm text-gray-500">
+                    via {review.platform}
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
         <div className="container mx-auto px-4">
@@ -127,22 +245,13 @@ export default function Home() {
                 50.000 zufriedene Kunden vertrauen uns!
               </p>
               <div className="flex gap-4">
-                <a
-                  href="#"
-                  className="text-pink-400 hover:text-pink-300"
-                >
+                <a href="#" className="text-pink-400 hover:text-pink-300">
                   📱 TikTok
                 </a>
-                <a
-                  href="#"
-                  className="text-pink-400 hover:text-pink-300"
-                >
+                <a href="#" className="text-pink-400 hover:text-pink-300">
                   📷 Instagram
                 </a>
-                <a
-                  href="#"
-                  className="text-pink-400 hover:text-pink-300"
-                >
+                <a href="#" className="text-pink-400 hover:text-pink-300">
                   📘 Facebook
                 </a>
               </div>

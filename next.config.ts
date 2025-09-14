@@ -5,9 +5,9 @@ const nextConfig = {
   swcMinify: true,
 
   // WICHTIG für STRATO (statisches Hosting)
-  output: 'export',
+  //output: 'export',
   // Optional: hilfreich für statische Hosts ohne Rewrites
-  trailingSlash: true,
+  //trailingSlash: true,
 
   images: {
     domains: ['images.unsplash.com', 'via.placeholder.com'],
