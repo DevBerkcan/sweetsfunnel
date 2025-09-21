@@ -7,52 +7,6 @@ import HeroSection from "./components/HeroSection";
 import StepByStepGuide from "./components/StepByStepGuide";
 import NewsletterSignup from "./components/NewsletterSignup";
 
-// Sample Products für später (falls du noch eine Produkt-Sektion hinzufügst)
-const sampleProducts = [
-  {
-    id: 1,
-    name: "Japanische Kit-Kat Matcha",
-    description: "Exklusive Matcha-Geschmack aus Japan",
-    price: 8.99,
-    oldPrice: 12.99,
-    discount: 31,
-    image: "https://images.unsplash.com/photo-1565958011703-44f9829ba187?w=300",
-    rating: 5,
-    reviews: 247,
-    isNew: true,
-  },
-  {
-    id: 2,
-    name: "Amerikanische Sour Patch Kids",
-    description: "Original US-Import, super sauer!",
-    price: 5.49,
-    image: "https://images.unsplash.com/photo-1559847844-5315695dadae?w=300",
-    rating: 4,
-    reviews: 156,
-  },
-  {
-    id: 3,
-    name: "Koreanische Honey Butter Chips",
-    description: "Viral auf TikTok - süß & salzig",
-    price: 6.99,
-    oldPrice: 8.99,
-    discount: 22,
-    image: "https://images.unsplash.com/photo-1613919113640-25732ec5e61f?w=300",
-    rating: 5,
-    reviews: 189,
-    isNew: true,
-  },
-  {
-    id: 4,
-    name: "Brasilianische Brigadeiro",
-    description: "Traditionelle Schokoladenkugeln",
-    price: 9.99,
-    image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=300",
-    rating: 4,
-    reviews: 98,
-  },
-];
-
 function trackEvent(eventName: any) {
   // Placeholder for analytics event tracking
   console.log(`Event tracked: ${eventName}`);
@@ -164,15 +118,6 @@ export default function Home() {
               <h3 className="font-bold text-gray-800">TikTok Viral</h3>
               <p className="text-gray-600 text-sm">Millionen Views</p>
             </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Newsletter Section */}
-      <section className="py-20 bg-gradient-to-br from-pink-50 to-purple-50">
-        <div className="container mx-auto px-4">
-          <div className="max-w-2xl mx-auto">
-            <NewsletterSignup />
           </div>
         </div>
       </section>

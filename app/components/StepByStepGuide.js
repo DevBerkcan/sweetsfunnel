@@ -213,37 +213,6 @@ export default function StepByStepGuide() {
             );
           })}
         </div>
-
-        {/* CTA Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center"
-        >
-          <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-2xl p-8 max-w-2xl mx-auto border border-pink-200">
-            <h3 className="text-2xl font-bold text-gray-800 mb-4">
-              Bereit für deine kostenlose Dubai-Schokolade?
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Werde jetzt Teil der Community und sichere dir eines der letzten kostenlosen Pakete!
-            </p>
-            
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleCTAClick}
-              className="bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold py-4 px-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 flex items-center justify-center gap-3 mx-auto"
-            >
-              <Package className="w-6 h-6" />
-              Jetzt kostenlos anmelden
-            </motion.button>
-            
-            <p className="text-sm text-gray-500 mt-4">
-              🔥 Nur noch wenige Plätze verfügbar!
-            </p>
-          </div>
-        </motion.div>
       </div>
     </section>
   );
