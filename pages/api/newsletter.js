@@ -1,14 +1,12 @@
 import crypto from "crypto";
 
-function buildMergeFields({ firstName, offer, source, utm_source, utm_medium, utm_campaign }) {
-  // Erlaube nur Merge-Tags, die in MAILCHIMP_MERGE_TAGS stehen (z.B. "FNAME,OFFER,SOURCE")
-  const enabled = (process.env.MAILCHIMP_MERGE_TAGS || "FNAME")
-    .split(",")
-    .map(s => s.trim().toUpperCase())
-    .filter(Boolean);
+function buildMergeFields({ firstName, lastName, offer, source, utm_source, utm_medium, utm_campaign, street, city, postalCode, country }) {
+  const enabled = (process.env.MAILCHIMP_MERGE_TAGS || "FNAME,LNAME,ADDRESS")
+    .split(",").map(s => s.trim().toUpperCase()).filter(Boolean);
 
   const candidate = {
     FNAME: firstName || "",
+    LNAME: lastName || "",
     OFFER: offer,
     SOURCE: source,
     UTM_SOURCE: utm_source,
@@ -16,9 +14,31 @@ function buildMergeFields({ firstName, offer, source, utm_source, utm_medium, ut
     UTM_CAMPAIGN: utm_campaign,
   };
 
+  // Adresse zu Merge Fields hinzufügen, wenn vorhanden
+  if (street || city || postalCode || country) {
+    candidate.ADDRESS = {
+      addr1: street || "",
+      city: city || "",
+      zip: postalCode || "",
+      country: country || "DE"
+    };
+  }
+
   const out = {};
   for (const [k, v] of Object.entries(candidate)) {
-    if (enabled.includes(k) && v !== undefined && v !== null) out[k] = v;
+    if (enabled.includes(k) && v !== undefined && v !== null) {
+      // Spezielle Behandlung für ADDRESS-Objekt
+      if (k === "ADDRESS" && typeof v === "object") {
+        // Nur hinzufügen, wenn mindestens ein Adressfeld ausgefüllt ist
+        if (v.addr1 || v.city || v.zip) {
+          out[k] = v;
+        }
+      } else if (typeof v === "string" && v.trim() !== "") {
+        out[k] = v;
+      } else if (typeof v !== "string") {
+        out[k] = v;
+      }
+    }
   }
   return out;
 }
@@ -29,119 +49,167 @@ export default async function handler(req, res) {
   const {
     email,
     firstName = "",
+    lastName = "",
+    street = "",
+    city = "",
+    postalCode = "",
+    country = "DE",
     source = "standard",
     offer,
     utm_source,
     utm_medium,
     utm_campaign,
-    statusIfNew = "subscribed", // setze auf "pending" für Double Opt-In
+    statusIfNew = "subscribed", // "pending" für DOI
   } = req.body || {};
 
   if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
     return res.status(400).json({ message: "Valid email is required" });
   }
 
-  try {
-    const API_KEY = process.env.MAILCHIMP_API_KEY;
-    const LIST_ID = process.env.MAILCHIMP_AUDIENCE_ID;
-    if (!API_KEY || !LIST_ID) {
-      return res.status(500).json({ message: "Server config missing (MAILCHIMP_* envs)" });
-    }
+  const API_KEY = process.env.MAILCHIMP_API_KEY;
+  const LIST_ID = process.env.MAILCHIMP_AUDIENCE_ID;
+  if (!API_KEY || !LIST_ID) {
+    return res.status(500).json({ message: "Server config missing (MAILCHIMP_* envs)" });
+  }
 
+  try {
     const DATACENTER = API_KEY.split("-")[1];
+    const basic = Buffer.from(`anystring:${API_KEY}`).toString("base64");
     const subscriberHash = crypto.createHash("md5").update(email.toLowerCase()).digest("hex");
 
     const merge_fields = buildMergeFields({
       firstName,
+      lastName,
       offer: offer || (source === "hero_dubai_offer" ? "Dubai Schokolade" : "Standard"),
       source,
       utm_source,
       utm_medium,
       utm_campaign,
+      street,
+      city,
+      postalCode,
+      country
     });
 
-    // 1) Upsert (idempotent)
-    let upsert = await fetch(
-      `https://${DATACENTER}.api.mailchimp.com/3.0/lists/${LIST_ID}/members/${subscriberHash}`,
-      {
-        method: "PUT",
-        headers: { Authorization: `apikey ${API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email_address: email,
-          status_if_new: statusIfNew,
-          merge_fields,
-        }),
-      }
-    );
-    let mcData = await upsert.json();
+    const memberUrl = `https://${DATACENTER}.api.mailchimp.com/3.0/lists/${LIST_ID}/members/${subscriberHash}`;
 
-    // 2) Häufige Fehler behandeln
+    // Erstelle den Member mit allen verfügbaren Daten
+    let upsert = await fetch(memberUrl, {
+      method: "PUT",
+      headers: { Authorization: `Basic ${basic}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        email_address: email, 
+        status_if_new: statusIfNew, 
+        merge_fields 
+      }),
+    });
+    
+    const upText = await upsert.text();
+    let mcData = null; 
+    try { 
+      mcData = upText ? JSON.parse(upText) : {}; 
+    } catch {}
+
     if (!upsert.ok) {
-      const detail = String(mcData?.detail || "").toLowerCase();
+      const detail = String(mcData?.detail || upText || "").toLowerCase();
 
-      // Auth/Datacenter
       if (upsert.status === 401 || detail.includes("api key")) {
-        return res.status(400).json({ message: "Mailchimp auth failed (API key/datacenter)", mc: mcData });
+        return res.status(400).json({ message: "Mailchimp auth failed (API key/datacenter)", mc: mcData || upText });
       }
 
-      // Resubscribe/Compliance -> retry mit pending
       if (detail.includes("compliance") || detail.includes("resubscribe") || detail.includes("pending")) {
-        const retry = await fetch(
-          `https://${DATACENTER}.api.mailchimp.com/3.0/lists/${LIST_ID}/members/${subscriberHash}`,
-          {
-            method: "PUT",
-            headers: { Authorization: `apikey ${API_KEY}`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email_address: email,
-              status_if_new: "pending",
-              status: "pending",
-              merge_fields,
-            }),
-          }
-        );
-        const retryData = await retry.json();
-        if (!retry.ok) {
-          return res.status(400).json({ message: retryData.title || "Subscription failed", mc: retryData });
-        }
+        const retry = await fetch(memberUrl, {
+          method: "PUT",
+          headers: { Authorization: `Basic ${basic}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            email_address: email, 
+            status_if_new: "pending", 
+            status: "pending", 
+            merge_fields 
+          }),
+        });
+        const retryText = await retry.text();
+        let retryData = null; 
+        try { 
+          retryData = retryText ? JSON.parse(retryText) : {}; 
+        } catch {}
+        if (!retry.ok) return res.status(400).json({ message: retryData?.title || "Subscription failed", mc: retryData || retryText });
         mcData = retryData;
       } else {
-        // Meist: unbekannte merge_fields -> vorherigen Filter behebt das
-        return res.status(400).json({ message: mcData.title || "Subscription failed", mc: mcData });
+        return res.status(400).json({ message: mcData?.title || "Subscription failed", mc: mcData || upText });
       }
     }
 
-    // 3) Tags (fehlschlagen lassen wir NICHT die ganze Anmeldung)
-    const tags = [{ name: "website-signup", status: "active" }, { name: source, status: "active" }];
-    if (source === "hero_dubai_offer") tags.push({ name: "dubai_chocolate", status: "active" });
-    if (offer) tags.push({ name: offer.toLowerCase().replace(/\s+/g, "_"), status: "active" });
+    // Tags basierend auf bereitgestellten Daten erstellen
+    const tags = [
+      { name: "website-signup", status: "active" }, 
+      { name: source, status: "active" }
+    ];
+    
+    if (source === "hero_dubai_offer" || source === "hero_offer") {
+      tags.push({ name: "dubai_chocolate", status: "active" });
+    }
+    
+    if (offer) {
+      tags.push({ name: String(offer).toLowerCase().replace(/\s+/g, "_"), status: "active" });
+    }
 
-    const tagsRes = await fetch(
-      `https://${DATACENTER}.api.mailchimp.com/3.0/lists/${LIST_ID}/members/${subscriberHash}/tags`,
-      {
-        method: "POST",
-        headers: { Authorization: `apikey ${API_KEY}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ tags }),
-      }
-    );
+    // Adress-Tag hinzufügen, wenn Adresse bereitgestellt wurde
+    if (street || city || postalCode) {
+      tags.push({ name: "address_provided", status: "active" });
+    }
+
+    // UTM-basierte Tags
+    if (utm_source) {
+      tags.push({ name: `utm_source_${utm_source}`, status: "active" });
+    }
+    if (utm_campaign) {
+      tags.push({ name: `utm_campaign_${utm_campaign}`, status: "active" });
+    }
+
+    const tagsRes = await fetch(`${memberUrl}/tags`, {
+      method: "POST",
+      headers: { Authorization: `Basic ${basic}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ tags }),
+    });
 
     let tagsWarning;
-    if (!tagsRes.ok) {
-      try {
-        tagsWarning = await tagsRes.json();
-      } catch {
-        tagsWarning = { error: "Failed to parse tags response" };
-      }
+    if (!tagsRes.ok) { 
+      try { 
+        tagsWarning = await tagsRes.json(); 
+      } catch { 
+        tagsWarning = { error: "Failed to parse tags response" }; 
+      } 
     }
 
-    return res.status(200).json({
+    // Response erstellen
+    const responseData = {
       message: "Successfully subscribed!",
       email,
-      offer: source === "hero_dubai_offer" ? "dubai_chocolate" : "standard",
+      firstName: firstName || undefined,
+      lastName: lastName || undefined,
+      offer: source === "hero_dubai_offer" || source === "hero_offer" ? "dubai_chocolate" : "standard",
       status: statusIfNew,
+      address_provided: !!(street || city || postalCode),
       ...(tagsWarning ? { tagsWarning } : {}),
-    });
+    };
+
+    // Debug-Info für Entwicklung
+    if (process.env.NODE_ENV === "development") {
+      responseData.debug = {
+        merge_fields,
+        tags: tags.map(t => t.name),
+        subscriber_hash: subscriberHash
+      };
+    }
+
+    return res.status(200).json(responseData);
+    
   } catch (err) {
     console.error("Newsletter signup error:", err);
-    return res.status(500).json({ message: "Subscription failed", error: err.message });
+    return res.status(500).json({ 
+      message: "Subscription failed", 
+      error: process.env.NODE_ENV === "development" ? err.message : "Internal server error"
+    });
   }
 }
