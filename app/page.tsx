@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import Head from "next/head";
 import HeroSection from "./components/HeroSection";
 import StepByStepGuide from "./components/StepByStepGuide";
-import NewsletterSignup from "./components/NewsletterSignup";
+import Footer from "./components/Footer";
 
 function trackEvent(eventName: any) {
   // Placeholder for analytics event tracking
@@ -71,116 +71,9 @@ export default function Home() {
 
       {/* Step by Step Guide - NEU HINZUGEFÜGT */}
       <StepByStepGuide />
-'
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-pink-400 to-purple-400 bg-clip-text text-transparent">
-                Sweets Welt
-              </h3>
-              <p className="text-gray-400 mb-4">
-                Deine Quelle für einzigartige Süßigkeiten aus aller Welt. Über
-                50.000 zufriedene Kunden vertrauen uns!
-              </p>
-              <div className="flex gap-4">
-                <a href="#" className="text-pink-400 hover:text-pink-300">
-                  📱 TikTok
-                </a>
-                <a href="#" className="text-pink-400 hover:text-pink-300">
-                  📷 Instagram
-                </a>
-                <a href="#" className="text-pink-400 hover:text-pink-300">
-                  📘 Facebook
-                </a>
-              </div>
-            </div>
 
-            <div>
-              <h4 className="font-bold mb-4">Shop</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Alle Produkte
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Bestseller
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Neue Produkte
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Sale
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-bold mb-4">Service</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Kontakt
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Versand
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Rückgabe
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    FAQ
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-bold mb-4">Rechtliches</h4>
-              <ul className="space-y-2 text-gray-400">
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Impressum
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Datenschutz
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    AGB
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="hover:text-white">
-                    Widerruf
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2025 Sweets aus aller Welt. Alle Rechte vorbehalten.</p>
-          </div>
-        </div>
-      </footer>
+      {/* Footer Komponente */}
+      <Footer />
     </>
   );
 }
