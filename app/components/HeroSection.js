@@ -262,7 +262,7 @@ export default function HeroSection({ onCTAClick }) {
                           type="text"
                           placeholder="Dein Vorname"
                           {...contactForm.register("firstName", { required: "Vorname ist erforderlich", minLength: { value: 2, message: "Mindestens 2 Zeichen" } })}
-                          className="w-full pl-12 pr-6 py-4 text-base border-2 border-white/30 bg-white/40 rounded-xl focus:border-pink-500 focus:bg-white/60 focus:outline-none placeholder:text-gray-600"
+                          className="w-full pl-12 pr-6 py-4 text-base text-gray-900 border-2 border-white/30 bg-white/40 rounded-xl focus:border-pink-500 focus:bg-white/60 focus:outline-none placeholder:text-gray-600"
                         />
                       </div>
                       {contactForm.formState.errors.firstName && <p className="text-red-600 text-sm mt-2 text-left font-medium">{contactForm.formState.errors.firstName.message}</p>}
@@ -276,7 +276,7 @@ export default function HeroSection({ onCTAClick }) {
                           type="text"
                           placeholder="Dein Nachname"
                           {...contactForm.register("lastName", { required: "Nachname ist erforderlich", minLength: { value: 2, message: "Mindestens 2 Zeichen" } })}
-                          className="w-full pl-12 pr-6 py-4 text-base border-2 border-white/30 bg-white/40 rounded-xl focus:border-pink-500 focus:bg-white/60 focus:outline-none placeholder:text-gray-600"
+                          className="w-full pl-12 pr-6 py-4 text-base text-gray-900 border-2 border-white/30 bg-white/40 rounded-xl focus:border-pink-500 focus:bg-white/60 focus:outline-none placeholder:text-gray-600"
                         />
                       </div>
                       {contactForm.formState.errors.lastName && <p className="text-red-600 text-sm mt-2 text-left font-medium">{contactForm.formState.errors.lastName.message}</p>}
@@ -293,7 +293,7 @@ export default function HeroSection({ onCTAClick }) {
                             required: "E-Mail ist erforderlich",
                             pattern: { value: /\S+@\S+\.\S+/, message: "Bitte gib eine gültige E-Mail Adresse ein" }
                           })}
-                          className="w-full pl-12 pr-6 py-4 text-base border-2 border-white/30 bg-white/40 rounded-xl focus:border-pink-500 focus:bg-white/60 focus:outline-none placeholder:text-gray-600"
+                          className="w-full pl-12 pr-6 py-4 text-base text-gray-900 border-2 border-white/30 bg-white/40 rounded-xl focus:border-pink-500 focus:bg-white/60 focus:outline-none placeholder:text-gray-600"
                         />
                       </div>
                       {contactForm.formState.errors.email && <p className="text-red-600 text-sm mt-2 text-left font-medium">{contactForm.formState.errors.email.message}</p>}

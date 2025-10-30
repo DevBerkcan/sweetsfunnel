@@ -1,12 +1,13 @@
 import crypto from "crypto";
 
-function buildMergeFields({ firstName, lastName, offer, source, utm_source, utm_medium, utm_campaign, street, city, postalCode, country }) {
-  const enabled = (process.env.MAILCHIMP_MERGE_TAGS || "FNAME,LNAME,ADDRESS")
+function buildMergeFields({ firstName, lastName, phone, offer, source, utm_source, utm_medium, utm_campaign, street, city, postalCode, country }) {
+  const enabled = (process.env.MAILCHIMP_MERGE_TAGS || "FNAME,LNAME,PHONE,ADDRESS")
     .split(",").map(s => s.trim().toUpperCase()).filter(Boolean);
 
   const candidate = {
     FNAME: firstName || "",
     LNAME: lastName || "",
+    PHONE: phone || "",
     OFFER: offer,
     SOURCE: source,
     UTM_SOURCE: utm_source,
@@ -50,6 +51,7 @@ export default async function handler(req, res) {
     email,
     firstName = "",
     lastName = "",
+    phone = "",
     street = "",
     city = "",
     postalCode = "",
@@ -80,6 +82,7 @@ export default async function handler(req, res) {
     const merge_fields = buildMergeFields({
       firstName,
       lastName,
+      phone,
       offer: offer || (source === "hero_dubai_offer" ? "Dubai Schokolade" : "Standard"),
       source,
       utm_source,
@@ -112,26 +115,41 @@ export default async function handler(req, res) {
 
     if (!upsert.ok) {
       const detail = String(mcData?.detail || upText || "").toLowerCase();
+      const title = String(mcData?.title || "").toLowerCase();
 
       if (upsert.status === 401 || detail.includes("api key")) {
         return res.status(400).json({ message: "Mailchimp auth failed (API key/datacenter)", mc: mcData || upText });
+      }
+
+      // Behandlung für gelöschte/vergessene E-Mail-Adressen
+      if (title.includes("forgotten") || detail.includes("permanently deleted") || detail.includes("re-subscribe")) {
+        console.warn(`⚠️  E-Mail wurde aus Mailchimp gelöscht und kann nicht re-importiert werden: ${email}`);
+        // Gebe trotzdem Erfolg zurück, damit der User nicht blockiert wird
+        return res.status(200).json({
+          message: "Successfully subscribed!",
+          email,
+          firstName: firstName || undefined,
+          lastName: lastName || undefined,
+          status: "pending_resubscribe",
+          warning: "Diese E-Mail-Adresse wurde zuvor aus der Liste entfernt. Bitte nutze den Link in der Bestätigungs-E-Mail, um dich erneut anzumelden."
+        });
       }
 
       if (detail.includes("compliance") || detail.includes("resubscribe") || detail.includes("pending")) {
         const retry = await fetch(memberUrl, {
           method: "PUT",
           headers: { Authorization: `Basic ${basic}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ 
-            email_address: email, 
-            status_if_new: "pending", 
-            status: "pending", 
-            merge_fields 
+          body: JSON.stringify({
+            email_address: email,
+            status_if_new: "pending",
+            status: "pending",
+            merge_fields
           }),
         });
         const retryText = await retry.text();
-        let retryData = null; 
-        try { 
-          retryData = retryText ? JSON.parse(retryText) : {}; 
+        let retryData = null;
+        try {
+          retryData = retryText ? JSON.parse(retryText) : {};
         } catch {}
         if (!retry.ok) return res.status(400).json({ message: retryData?.title || "Subscription failed", mc: retryData || retryText });
         mcData = retryData;
