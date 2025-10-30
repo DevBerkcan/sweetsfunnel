@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { Mail, User, ChevronRight } from "lucide-react";
+import { Mail, User, MapPin, ChevronRight, ChevronLeft } from "lucide-react";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { FunnelTracker } from "../../lib/funnel";
@@ -9,7 +9,7 @@ import { trackEvent } from "../../lib/tracking";
 import Image from "next/image";
 
 export default function HeroSection({ onCTAClick }) {
-  const [step, setStep] = useState("contact"); // Only "contact" and "done" steps
+  const [step, setStep] = useState("contact");
 
   // Consent-State + Timestamp
   const [consent, setConsent] = useState(false);
@@ -17,7 +17,8 @@ export default function HeroSection({ onCTAClick }) {
   const [consentError, setConsentError] = useState(""); // Separate consent error state
 
   const [formData, setFormData] = useState({
-    firstName: "", lastName: "", email: "", whatsapp: ""
+    firstName: "", lastName: "", email: "",
+    street: "", city: "", postalCode: "", country: "DE"
   });
   const [isLoading, setIsLoading] = useState(false);
   const [vh, setVh] = useState(800);
@@ -29,6 +30,7 @@ export default function HeroSection({ onCTAClick }) {
   const currentOffer = { title: "Dubai-Schokolade", emoji: "🍫" };
 
   const contactForm = useForm({ mode: "onSubmit", reValidateMode: "onBlur" });
+  const addressForm = useForm({ mode: "onSubmit", reValidateMode: "onBlur" });
 
   const funnel = useMemo(() => new FunnelTracker(), []);
 
@@ -51,6 +53,8 @@ export default function HeroSection({ onCTAClick }) {
     };
   }, []);
 
+
+  
   const seeds = useMemo(() => {
     // Fixed: Ensure particleCount is always a valid number
     const count = (typeof particleCount === "number" && particleCount > 0) ? particleCount : 10;
@@ -115,22 +119,23 @@ export default function HeroSection({ onCTAClick }) {
       funnel.trackEmailCapture(data.email);
       trackEvent("lead_form_start", { source: "hero_section" });
 
+      setFormData(prev => ({ ...prev, firstName: data.firstName, lastName: data.lastName, email: data.email }));
+
       const res = await callNewsletterAPI({
         email: data.email,
         firstName: data.firstName,
         lastName: data.lastName,
-        phone: data.whatsapp || "", // WhatsApp number (optional)
         // Consent metadata for backend
         consent: true,
         consentTs: ts,
-        consentText: "Einwilligung in den Erhalt von E-Mails und zur Abwicklung der Gratis-Aktion, Hinweise in der Datenschutzerklärung."
+        consentText: "Einwilligung in den Erhalt des Newsletters (Double-Opt-In), Hinweise in der Datenschutzerklärung."
       });
 
       if (!res.ok) throw new Error("Subscription failed");
 
-      setStep("done");
+      setStep("address");
       submittedRef.current = false;
-      trackEvent("newsletter_contact_captured", { method: "hero_section", whatsapp_provided: !!data.whatsapp });
+      trackEvent("newsletter_contact_captured", { method: "hero_section" });
     } catch (error) {
       console.error("Newsletter signup error:", error);
       trackEvent("form_error", { type: "newsletter_signup_contact" });
@@ -139,6 +144,36 @@ export default function HeroSection({ onCTAClick }) {
       setIsLoading(false);
     }
   };
+
+  const onSubmitAddress = async (data) => { await completeRegistration(data, true); };
+  const onSkipAddress = async () => { await completeRegistration({}, false); };
+
+  const completeRegistration = async (addressData, includeAddress) => {
+    setIsLoading(true);
+    try {
+      const finalData = {
+        email: formData.email,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        ...(includeAddress ? addressData : {}),
+        // Consent data again
+        consent: true,
+        consentTs,
+      };
+      const res = await callNewsletterAPI(finalData);
+      if (!res.ok) throw new Error("Update failed");
+
+      setStep("done");
+      trackEvent("complete_registration", { method: "newsletter", value: 1.0, currency: "EUR", address_provided: includeAddress });
+    } catch (error) {
+      console.error("Registration completion error:", error);
+      trackEvent("form_error", { type: "newsletter_completion" });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBackToContact = () => setStep("contact");
 
   if (step === "done") {
     return (
@@ -225,7 +260,7 @@ export default function HeroSection({ onCTAClick }) {
                         <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
                         <input
                           type="text"
-                          placeholder="Vorname *"
+                          placeholder="Dein Vorname"
                           {...contactForm.register("firstName", { required: "Vorname ist erforderlich", minLength: { value: 2, message: "Mindestens 2 Zeichen" } })}
                           className="w-full pl-12 pr-6 py-4 text-base border-2 border-white/30 bg-white/40 rounded-xl focus:border-pink-500 focus:bg-white/60 focus:outline-none placeholder:text-gray-600"
                         />
@@ -233,17 +268,18 @@ export default function HeroSection({ onCTAClick }) {
                       {contactForm.formState.errors.firstName && <p className="text-red-600 text-sm mt-2 text-left font-medium">{contactForm.formState.errors.firstName.message}</p>}
                     </div>
 
-                    {/* Nachname (optional) */}
+                    {/* Nachname */}
                     <div>
                       <div className="relative">
                         <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
                         <input
                           type="text"
-                          placeholder="Nachname (optional)"
-                          {...contactForm.register("lastName")}
+                          placeholder="Dein Nachname"
+                          {...contactForm.register("lastName", { required: "Nachname ist erforderlich", minLength: { value: 2, message: "Mindestens 2 Zeichen" } })}
                           className="w-full pl-12 pr-6 py-4 text-base border-2 border-white/30 bg-white/40 rounded-xl focus:border-pink-500 focus:bg-white/60 focus:outline-none placeholder:text-gray-600"
                         />
                       </div>
+                      {contactForm.formState.errors.lastName && <p className="text-red-600 text-sm mt-2 text-left font-medium">{contactForm.formState.errors.lastName.message}</p>}
                     </div>
 
                     {/* E-Mail */}
@@ -252,7 +288,7 @@ export default function HeroSection({ onCTAClick }) {
                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
                         <input
                           type="email"
-                          placeholder="E-Mail *"
+                          placeholder="Deine E-Mail Adresse"
                           {...contactForm.register("email", {
                             required: "E-Mail ist erforderlich",
                             pattern: { value: /\S+@\S+\.\S+/, message: "Bitte gib eine gültige E-Mail Adresse ein" }
@@ -261,22 +297,6 @@ export default function HeroSection({ onCTAClick }) {
                         />
                       </div>
                       {contactForm.formState.errors.email && <p className="text-red-600 text-sm mt-2 text-left font-medium">{contactForm.formState.errors.email.message}</p>}
-                    </div>
-
-                    {/* WhatsApp (optional) */}
-                    <div>
-                      <div className="relative">
-                        <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-                        </svg>
-                        <input
-                          type="tel"
-                          placeholder="WhatsApp Nummer (optional)"
-                          {...contactForm.register("whatsapp")}
-                          className="w-full pl-12 pr-6 py-4 text-base border-2 border-white/30 bg-white/40 rounded-xl focus:border-pink-500 focus:bg-white/60 focus:outline-none placeholder:text-gray-600"
-                        />
-                      </div>
-                      <p className="text-xs text-gray-600 mt-1 ml-1">Für schnellere Updates zur Lieferung</p>
                     </div>
 
                     {/* Consent Checkbox */}
@@ -290,11 +310,14 @@ export default function HeroSection({ onCTAClick }) {
                             setConsentError(""); // Clear error when checked
                           }
                         }}
-                        className="mt-1 h-4 w-4 flex-shrink-0"
+                        className="mt-1 h-4 w-4"
                       />
                       <span className="text-sm text-gray-800">
-                        Ich willige ein, E-Mails von <strong>Sweets aus aller Welt</strong> zu erhalten und dass meine Daten zur Abwicklung der Gratis-Aktion verarbeitet werden. Hinweise in der{" "}
-                        <a href="https://sweetsausallerwelt.de/pages/datenschutzerklarung" target="_blank" rel="noopener noreferrer" className="underline font-medium">Datenschutzerklärung</a>. Abmeldung jederzeit möglich.
+                        Ich willige ein, den Newsletter von <strong>Sweets aus aller Welt</strong> per E-Mail zu erhalten.
+                        Hinweise zu Inhalten, Protokollierung, Versand über Mailchimp,
+                        statistischer Auswertung sowie Widerruf findest du in der{" "}
+                        <a href="/datenschutz" target="_blank" className="underline">Datenschutzerklärung</a>.
+                        Die Einwilligung kann jederzeit über den Abmeldelink widerrufen werden.
                       </span>
                     </label>
                     {consentError && (
@@ -316,18 +339,68 @@ export default function HeroSection({ onCTAClick }) {
                   <div className="text-xs text-gray-700 mt-4 text-center drop-shadow-sm space-y-2">
                     <p>🔒 100% kostenlos • Double-Opt-In • Jederzeit abbestellbar</p>
                     <p>
-                      <a href="https://sweetsausallerwelt.de/pages/datenschutzerklarung" target="_blank" rel="noopener noreferrer" className="underline font-medium">Datenschutz</a> ·{" "}
-                      <a href="https://sweetsausallerwelt.de/pages/teilnahmebedingungen" target="_blank" rel="noopener noreferrer" className="underline font-medium">Teilnahmeinfos</a>
+                      <a href="/datenschutz" target="_blank" className="underline font-medium">Datenschutz</a> ·{" "}
+                      <a href="/teilnahmebedingungen" target="_blank" className="underline font-medium">Teilnahmeinfos</a>
                     </p>
                     <p className="text-xs">
-                      <a href="https://sweetsausallerwelt.de/pages/impressum" target="_blank" rel="noopener noreferrer" className="underline">Impressum</a> ·{" "}
-                      <a href="https://sweetsausallerwelt.de/pages/datenschutzerklarung" target="_blank" rel="noopener noreferrer" className="underline">Datenschutzerklärung</a> ·{" "}
-                      <a href="https://sweetsausallerwelt.de/pages/agb" target="_blank" rel="noopener noreferrer" className="underline">AGB</a>
+                      <a href="/impressum" target="_blank" className="underline">Impressum</a> ·{" "}
+                      <a href="/datenschutz" target="_blank" className="underline">Datenschutzerklärung</a> ·{" "}
+                      <a href="/agb" target="_blank" className="underline">AGB</a>
                     </p>
                   </div>
                 </motion.div>
               )}
 
+              {/* ADDRESS STEP (optional) */}
+              {step === "address" && (
+                <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }}>
+                  <div className="text-center mb-6">
+                    <div className="text-4xl mb-3">📍</div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2 drop-shadow-sm">Lieferadresse</h3>
+                    <p className="text-gray-700 drop-shadow-sm">Diese Angaben sind optional und können übersprungen werden</p>
+                  </div>
+
+                  <form onSubmit={addressForm.handleSubmit(onSubmitAddress)} className="space-y-4">
+                    <div className="relative">
+                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-5 h-5" />
+                      <input type="text" placeholder="Straße und Hausnummer" {...addressForm.register("street")}
+                             className="w-full pl-12 pr-6 py-3 text-base border-2 border-white/30 bg-white/40 rounded-xl focus:border-pink-500 focus:bg-white/60 focus:outline-none placeholder:text-gray-600" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <input type="text" placeholder="PLZ" {...addressForm.register("postalCode")}
+                             className="w-full px-4 py-3 text-base border-2 border-white/30 bg-white/40 rounded-xl focus:border-pink-500 focus:bg-white/60 focus:outline-none placeholder:text-gray-600" />
+                      <input type="text" placeholder="Stadt" {...addressForm.register("city")}
+                             className="w-full px-4 py-3 text-base border-2 border-white/30 bg-white/40 rounded-xl focus:border-pink-500 focus:bg-white/60 focus:outline-none placeholder:text-gray-600" />
+                    </div>
+                    <select {...addressForm.register("country")}
+                            className="w-full px-4 py-3 text-base border-2 border-white/30 bg-white/40 rounded-xl focus:border-pink-500 focus:bg-white/60 focus:outline-none">
+                      <option value="DE">Deutschland</option>
+                      <option value="AT">Österreich</option>
+                      <option value="CH">Schweiz</option>
+                    </select>
+
+                    <div className="flex gap-3 pt-4">
+                      <motion.button type="button" onClick={handleBackToContact}
+                        className="flex-1 bg-gray-400 text-white font-bold py-3 px-4 rounded-xl hover:bg-gray-500 transition-all flex items-center justify-center gap-2"
+                        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                        <ChevronLeft className="w-5 h-5" /> Zurück
+                      </motion.button>
+                      <motion.button type="button" onClick={onSkipAddress} disabled={isLoading}
+                        className="flex-1 bg-gray-500 text-white font-bold py-3 px-4 rounded-xl hover:bg-gray-600 transition-all disabled:opacity-70"
+                        whileHover={{ scale: isLoading ? 1 : 1.02 }} whileTap={{ scale: isLoading ? 1 : 0.98 }}>
+                        {isLoading ? "Lädt..." : "Überspringen"}
+                      </motion.button>
+                      <motion.button type="submit" disabled={isLoading}
+                        className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold py-3 px-4 rounded-xl hover:from-pink-600 hover:to-purple-700 transition-all disabled:opacity-70"
+                        whileHover={{ scale: isLoading ? 1 : 1.02 }} whileTap={{ scale: isLoading ? 1 : 0.98 }}>
+                        {isLoading ? "Lädt..." : "Fertig! 🍫"}
+                      </motion.button>
+                    </div>
+                  </form>
+
+                  <p className="text-xs text-gray-700 mt-4 text-center drop-shadow-sm">Du kannst die Adresse auch später noch hinzufügen</p>
+                </motion.div>
+              )}
             </div>
           </motion.div>
         </motion.div>
