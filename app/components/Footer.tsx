@@ -76,9 +76,10 @@ export default function Footer() {
         <div className="mt-10 pt-6 border-t border-white/10">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-wrap justify-center md:justify-start gap-x-6 gap-y-2 text-sm text-gray-400">
-              <a href="https://sweetsausallerwelt.de/pages/impressum" className="hover:text-white transition">Impressum</a>
-              <a href="https://sweetsausallerwelt.de/pages/datenschutzerklarung" className="hover:text-white transition">Datenschutz</a>
-              <a href="https://sweetsausallerwelt.de/pages/agb" className="hover:text-white transition">AGB</a>
+              <a href="https://sweetsausallerwelt.de/pages/impressum" target="_blank" rel="noopener noreferrer" className="hover:text-white transition">Impressum</a>
+              <a href="https://sweetsausallerwelt.de/pages/datenschutzerklarung" target="_blank" rel="noopener noreferrer" className="hover:text-white transition">Datenschutzerklärung</a>
+              <a href="https://sweetsausallerwelt.de/pages/agb" target="_blank" rel="noopener noreferrer" className="hover:text-white transition">AGB</a>
+              <a href="https://sweetsausallerwelt.de/pages/teilnahmebedingungen" target="_blank" rel="noopener noreferrer" className="hover:text-white transition">Teilnahmebedingungen</a>
             </div>
             <p className="text-center md:text-right text-sm text-gray-400">
               &copy; {new Date().getFullYear()} Sweets aus aller Welt

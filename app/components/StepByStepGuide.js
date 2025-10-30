@@ -11,40 +11,40 @@ export default function StepByStepGuide() {
   const steps = [
     {
       id: 1,
-      title: "Tritt der Community bei",
-      description: "Melde dich kostenlos mit deiner E-Mail an und werde Teil unserer süßen Community von über 50.000 Mitgliedern.",
+      title: "Anmelden",
+      description: "E-Mail eintragen und bestätigen",
       icon: Users,
       color: "from-pink-500 to-purple-600",
       details: [
         "Kostenlose Anmeldung in 30 Sekunden",
-        "Sofortiger Zugang zur Community",
+        "Werde Teil unserer süßen Community",
         "Exklusive Angebote und Neuigkeiten"
       ],
       trackingEvent: 'guide_step_1_viewed'
     },
     {
       id: 2,
-      title: "Unser Team kontaktiert dich",
-      description: "Wenn du unter den ersten 100 bist, wird dich unser Team per E-Mail kontaktieren und alle Details bestätigen.",
+      title: "Bestätigen",
+      description: "E-Mail bestätigen",
       icon: Mail,
       color: "from-blue-500 to-indigo-600",
       details: [
-        "Automatische E-Mail-Bestätigung",
-        "Persönliche Betreuung durch unser Team",
-        "Bestätigung deiner Lieferadresse"
+        "Bestätigungs-E-Mail in deinem Postfach",
+        "Einfach auf den Link klicken",
+        "Double-Opt-In für deine Sicherheit"
       ],
       trackingEvent: 'guide_step_2_viewed'
     },
     {
       id: 3,
-      title: "Dubai-Schokolade wird versendet",
-      description: "Wir schicken dir deine exklusive Dubai-Schokolade direkt an deine Wunschadresse - komplett kostenlos!",
+      title: "Erhalten",
+      description: "Dubai-Schokolade kommt gratis zu dir",
       icon: Package,
       color: "from-green-500 to-emerald-600",
       details: [
-        "Kostenloser Versand deutschlandweit",
+        "Kostenloser Versand innerhalb Deutschlands",
         "Hochwertige Verpackung",
-        "Tracking-Nummer für die Sendung"
+        "Exklusive Dubai-Schokolade"
       ],
       trackingEvent: 'guide_step_3_viewed'
     }
@@ -80,11 +80,14 @@ export default function StepByStepGuide() {
         >
           <h2 className="text-4xl md:text-5xl font-black mb-4">
             <span className="bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-              Wie funktioniert das Ganze?
+              So funktioniert's
             </span>
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             In nur 3 einfachen Schritten zu deiner kostenlosen Dubai-Schokolade
+          </p>
+          <p className="text-base text-gray-500 mt-2">
+            Versand kostenlos innerhalb Deutschlands. Solange der Vorrat reicht.
           </p>
         </motion.div>
 
