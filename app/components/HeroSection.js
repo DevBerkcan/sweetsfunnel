@@ -370,7 +370,6 @@ export default function HeroSection({ onCTAClick }) {
                     {consentError && (
                       <p className="text-red-600 text-xs md:text-sm font-medium -mt-1">{consentError}</p>
                     )}
-
                     {/* Submit Button */}
                     <motion.button
                       whileHover={{ scale: isLoading ? 1 : 1.03 }}
