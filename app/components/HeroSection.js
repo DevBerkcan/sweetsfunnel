@@ -490,10 +490,26 @@ export default function HeroSection({ onCTAClick }) {
                         }}
                         className="mt-0.5 h-4 w-4 md:h-5 md:w-5 flex-shrink-0 rounded border-gray-300 text-pink-600 focus:ring-2 focus:ring-pink-500 cursor-pointer"
                       />
-                      <span className="text-xs md:text-sm text-gray-800 leading-relaxed">
-                        Ich willige ein, den Newsletter von <strong>Sweets aus aller Welt</strong> per E-Mail zu erhalten. Hinweise zu Inhalten, Protokollierung, Versand über Mailchimp, statistischer Auswertung sowie Widerruf findest du in der{" "}
-                        <a href="https://sweetsausallerwelt.de/pages/datenschutzerklarung" target="_blank" rel="noopener noreferrer" className="underline font-semibold text-pink-600 hover:text-pink-700 transition-colors">Datenschutzerklärung</a>. Die Einwilligung kann jederzeit über den Abmeldelink widerrufen werden.
+                     <span className="text-xs md:text-sm text-gray-800 leading-relaxed">
+                        Mit meiner Anmeldung willige ich ein, den E-Mail-Newsletter von{" "}
+                        <strong>Sweets aus aller Welt</strong> zu erhalten. Der Newsletter informiert
+                        regelmäßig über neue Produkte, Aktionen, Gewinnspiele und Angebote.
+                        Solange ich im Newsletter eingetragen bin, nehme ich automatisch an der
+                        monatlichen Verlosung teil.
+                        Ich kann meine Einwilligung jederzeit mit Wirkung für die Zukunft widerrufen,
+                        z. B. über den Abmeldelink in jeder E-Mail. Weitere Informationen findest du
+                        in der{" "}
+                        <a
+                          href="https://sweetsausallerwelt.de/pages/datenschutzerklarung"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline font-semibold text-pink-600 hover:text-pink-700 transition-colors"
+                        >
+                          Datenschutzerklärung
+                        </a>
+                        .
                       </span>
+
                     </label>
                     {consentError && (
                       <p className="text-red-600 text-xs md:text-sm font-medium -mt-1">{consentError}</p>
