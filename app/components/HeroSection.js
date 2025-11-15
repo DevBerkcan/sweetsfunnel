@@ -7,7 +7,6 @@ import { useForm } from "react-hook-form";
 import { FunnelTracker } from "../../lib/funnel";
 import { trackEvent } from "../../lib/tracking";
 import Image from "next/image";
-import StepByStepGuide from "./StepByStepGuide";
 
 export default function HeroSection({ onCTAClick }) {
   const [step, setStep] = useState("contact");
@@ -357,7 +356,7 @@ export default function HeroSection({ onCTAClick }) {
           alt="Background Mobile"
           fill
           priority
-          className="object-cover object-center"
+          className="object-cover object-top"
           sizes="100vw"
           quality={90}
         />
@@ -521,9 +520,6 @@ export default function HeroSection({ onCTAClick }) {
       </div>
       </div>
       )}
-
-      {/* Step by Step Guide - nur anzeigen wenn noch nicht abgeschlossen */}
-      {step !== "done" && <StepByStepGuide />}
 
       {/* Success Screen nach Modal */}
       {step === "done" && !showSuccessModal && (

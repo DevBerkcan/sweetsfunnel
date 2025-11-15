@@ -54,7 +54,7 @@ export default async function handler(req, res) {
         LNAME: lastName || "",
         PHONE: phone || "",
         TICKET: ticketCode || "",
-        OFFER: offer || "Adventskalender 2024",
+        OFFER: offer || "Adventskalender 2025",
         SOURCE: source || "golden_ticket",
       },
       tags: [
