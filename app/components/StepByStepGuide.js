@@ -38,13 +38,13 @@ export default function StepByStepGuide() {
     {
       id: 3,
       title: "Erhalten",
-      description: "Dubai-Schokolade kommt gratis zu dir",
+      description: "Willkommensgeschenk kommt gratis zu dir",
       icon: Package,
       color: "from-green-500 to-emerald-600",
       details: [
         "Kostenloser Versand innerhalb Deutschlands",
         "Hochwertige Verpackung",
-        "Exklusive Dubai-Schokolade"
+        "Exklusives Willkommensgeschenk"
       ],
       trackingEvent: 'guide_step_3_viewed'
     }
@@ -84,7 +84,7 @@ export default function StepByStepGuide() {
             </span>
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            In nur 3 einfachen Schritten zu deiner kostenlosen Dubai-Schokolade
+            In nur 3 einfachen Schritten zu deinem kostenlosen Willkommensgeschenk
           </p>
           <p className="text-base text-gray-500 mt-2">
             Versand kostenlos innerhalb Deutschlands. Solange der Vorrat reicht.

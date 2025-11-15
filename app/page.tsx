@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Head from "next/head";
 import HeroSection from "./components/HeroSection";
-import StepByStepGuide from "./components/StepByStepGuide";
 import Footer from "./components/Footer";
 
 function trackEvent(eventName: any) {
@@ -68,9 +67,6 @@ export default function Home() {
       <div id="hero-section">
         <HeroSection onCTAClick={scrollToHero} />
       </div>
-
-      {/* Step by Step Guide - NEU HINZUGEFÜGT */}
-      <StepByStepGuide />
 
       {/* Footer Komponente */}
       <Footer />
