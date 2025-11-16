@@ -56,24 +56,6 @@ export default function HeroSection({ onCTAClick }) {
     };
   }, []);
 
-  const seeds = useMemo(() => {
-    const count = (typeof particleCount === "number" && particleCount > 0) ? particleCount : 10;
-    return Array.from({ length: count }, (_, i) => {
-      const rng = (x) => {
-        const t = Math.sin((i + 1) * 9301 + x * 49297) * 233280;
-        return t - Math.floor(t);
-      };
-      return { 
-        leftPct: rng(1) * 100, 
-        delay: rng(2) * 8, 
-        duration: 8 + rng(3) * 4, 
-        xDrift: Math.sin(i) * 100 
-      };
-    });
-  }, [particleCount]);
-
-  const sweetImages = ["/test.svg", "/test.svg", "/test.svg"];
-
   const getUTMParameter = (param) => {
     if (typeof window === "undefined") return null;
     return new URLSearchParams(window.location.search).get(param);
@@ -115,12 +97,19 @@ export default function HeroSection({ onCTAClick }) {
       funnel.trackEmailCapture(data.email);
       trackEvent("lead_form_start", { source: "hero_section" });
 
-      setFormData(prev => ({ ...prev, firstName: data.firstName, lastName: data.lastName, email: data.email }));
+      setFormData(prev => ({
+        ...prev,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        whatsapp: data.whatsapp
+      }));
 
       const res = await callNewsletterAPI({
         email: data.email,
         firstName: data.firstName,
         lastName: data.lastName,
+        whatsapp: data.whatsapp,
         consent: true,
         consentTs: ts,
         consentText: "Einwilligung in den Erhalt des Newsletters (Double-Opt-In), Hinweise in der Datenschutzerklärung."
@@ -128,9 +117,11 @@ export default function HeroSection({ onCTAClick }) {
 
       if (!res.ok) throw new Error("Subscription failed");
 
-      setStep("address");
+      // Direkt Success Modal anzeigen statt zum Adressschritt zu gehen
+      setShowSuccessModal(true);
       submittedRef.current = false;
       trackEvent("newsletter_contact_captured", { method: "hero_section" });
+      trackEvent("complete_registration", { method: "newsletter", value: 1.0, currency: "EUR" });
     } catch (error) {
       console.error("Newsletter signup error:", error);
       trackEvent("form_error", { type: "newsletter_signup_contact" });
@@ -201,133 +192,51 @@ export default function HeroSection({ onCTAClick }) {
     <>
       {/* Erfolgsmodal mit Gewinnspiel */}
       {showSuccessModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-3 md:p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[95vh] md:max-h-[90vh] overflow-y-auto"
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-6 rounded-t-2xl text-center">
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 p-4 md:p-6 rounded-t-2xl text-center">
               <motion.div
                 animate={{ scale: [1, 1.2, 1] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
-                className="text-6xl mb-3"
+                className="text-5xl md:text-6xl mb-2 md:mb-3"
               >
                 🎉
               </motion.div>
-              <h2 className="text-3xl md:text-4xl font-black text-white mb-2">
-                GESCHAFFT!
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-black text-white mb-2">
+                Herzlich Willkommen!
               </h2>
-              <p className="text-white/90 text-lg">
-                Deine Anmeldung war erfolgreich!
+              <p className="text-white/90 text-base md:text-lg">
+                Du bist jetzt beim Newsletter angemeldet! 🎊
               </p>
             </div>
 
             {/* Content */}
-            <div className="p-6 space-y-6">
+            <div className="p-4 md:p-6 space-y-4 md:space-y-6">
               {/* Success Info */}
-              <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4">
-                <p className="text-green-800 font-semibold mb-2 flex items-center gap-2">
-                  <span className="text-2xl">📧</span>
+              <div className="bg-green-50 border-2 border-green-200 rounded-xl p-3 md:p-4">
+                <p className="text-green-800 font-semibold text-sm md:text-base mb-2 flex items-center gap-2">
+                  <span className="text-xl md:text-2xl">📧</span>
                   Bestätigungs-E-Mail unterwegs
                 </p>
-                <p className="text-green-700 text-sm">
-                  Bitte bestätige deine Anmeldung über den Link in der E-Mail (Double-Opt-In).
+                <p className="text-green-700 text-xs md:text-sm leading-relaxed">
+                  Bitte bestätige deine Anmeldung über den Link in der E-Mail, um die Chance auf eine <strong>Süßigkeitenbox</strong> zu erhalten!
                 </p>
                 <p className="text-green-600 text-xs mt-2">
                   💡 Tipp: Schau auch im Spam-Ordner nach!
                 </p>
               </div>
 
-              {/* Gewinnspiel Opt-in */}
-              {!giveawaySubmitted ? (
-                <div className="bg-gradient-to-br from-pink-50 to-purple-50 border-2 border-pink-300 rounded-xl p-5">
-                  <div className="text-center mb-4">
-                    <div className="text-4xl mb-2">🎁🍫</div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-2">
-                      Gewinnspiel-Chance sichern!
-                    </h3>
-                    <p className="text-gray-700 text-sm leading-relaxed">
-                      Nehme am <strong>monatlichen Gewinnspiel</strong> teil und gewinne:
-                    </p>
-                  </div>
-
-                  <div className="space-y-3 mb-4">
-                    <div className="bg-white/80 rounded-lg p-3 border border-pink-200">
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">🍬</span>
-                        <div>
-                          <p className="font-semibold text-gray-800">1x Süßigkeitenbox</p>
-                          <p className="text-xs text-gray-600">Voller internationaler Leckereien</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="bg-white/80 rounded-lg p-3 border border-pink-200">
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">🍫</span>
-                        <div>
-                          <p className="font-semibold text-gray-800">1x Dubai-Schokolade</p>
-                          <p className="text-xs text-gray-600">Die virale Premium-Schokolade</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <label className="flex items-start gap-3 bg-white rounded-lg p-4 border-2 border-pink-300 cursor-pointer hover:bg-pink-50 transition-all mb-4">
-                    <input
-                      type="checkbox"
-                      checked={giveawayOptIn}
-                      onChange={(e) => setGiveawayOptIn(e.target.checked)}
-                      className="mt-0.5 h-5 w-5 flex-shrink-0 rounded border-gray-300 text-pink-600 focus:ring-2 focus:ring-pink-500 cursor-pointer"
-                    />
-                    <span className="text-sm text-gray-800 leading-relaxed">
-                      Ja, ich möchte am <strong>monatlichen Gewinnspiel</strong> teilnehmen und willige ein, entsprechende Informationen per E-Mail zu erhalten.
-                    </span>
-                  </label>
-
-                  <motion.button
-                    whileHover={{ scale: giveawayOptIn && !isLoading ? 1.02 : 1 }}
-                    whileTap={{ scale: giveawayOptIn && !isLoading ? 0.98 : 1 }}
-                    onClick={handleGiveawayOptIn}
-                    disabled={!giveawayOptIn || isLoading}
-                    className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl hover:from-pink-600 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  >
-                    {isLoading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
-                        Wird angemeldet...
-                      </>
-                    ) : (
-                      <>
-                        <span>🎲</span>
-                        Jetzt am Gewinnspiel teilnehmen!
-                      </>
-                    )}
-                  </motion.button>
-
-                  <p className="text-xs text-gray-500 text-center mt-3">
-                    Jeden Monat eine neue Chance zu gewinnen! 🍀
-                  </p>
-                </div>
-              ) : (
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-5 text-center">
-                  <div className="text-4xl mb-3">🎊</div>
-                  <h3 className="text-xl font-bold text-green-800 mb-2">
-                    Du bist dabei!
-                  </h3>
-                  <p className="text-green-700 text-sm">
-                    Du nimmst ab jetzt jeden Monat automatisch am Gewinnspiel teil. Viel Glück! 🍀
-                  </p>
-                </div>
-              )}
-
               {/* Close Button */}
               <button
                 onClick={handleCloseModal}
-                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 px-6 rounded-lg transition-all"
+                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-2.5 md:py-3 px-4 md:px-6 rounded-lg transition-all text-sm md:text-base"
               >
-                {giveawaySubmitted ? "Fertig! 🎉" : "Später teilnehmen"}
+                {giveawaySubmitted ? "Fertig! 🎉" : "Fertig! a🎉"}
               </button>
             </div>
           </motion.div>
@@ -362,22 +271,6 @@ export default function HeroSection({ onCTAClick }) {
           quality={90}
         />
       </div>
-
-      {/* Animation nur auf Desktop */}
-      {!prefersReducedMotion && (
-        <div className="absolute inset-0 pointer-events-none hidden md:block">
-          {seeds.map((s, i) => (
-            <motion.div key={i} className="absolute"
-              animate={{ y: [-100, vh + 100], x: [0, s.xDrift], rotate: [0, 360] }}
-              transition={{ duration: s.duration, repeat: Infinity, ease: "linear", delay: s.delay }}
-              style={{ left: `${s.leftPct}%`, top: "-100px" }}>
-              <img src={sweetImages[i % sweetImages.length]} alt="Süßigkeit"
-                   className="w-24 h-24 md:w-32 md:h-32 opacity-70 object-cover rounded-lg" loading="lazy"
-                   onError={(e) => (e.target.style.display = "none")} />
-            </motion.div>
-          ))}
-        </div>
-      )}
 
       {/* Formular UNTEN platziert - Responsive */}
       <div className="container mx-auto text-center relative z-10 max-w-sm md:max-w-md">
@@ -562,29 +455,139 @@ export default function HeroSection({ onCTAClick }) {
 
       {/* Success Screen nach Modal */}
       {step === "done" && !showSuccessModal && (
-        <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-green-100 via-emerald-50 to-teal-100 px-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="text-center max-w-lg mx-auto"
-          >
-            <div className="text-7xl mb-6">✅</div>
-            <h1 className="text-4xl md:text-5xl font-black mb-4">
-              <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-                Alles erledigt!
-              </span>
-            </h1>
-            <p className="text-xl text-gray-700 mb-4">
-              Wir freuen uns, dich in unserer Community zu haben! 🎉
-            </p>
-            {giveawaySubmitted && (
-              <div className="bg-white/90 p-4 rounded-xl shadow-lg">
-                <p className="text-green-600 font-semibold">
-                  🍀 Du nimmst am monatlichen Gewinnspiel teil!
-                </p>
-              </div>
-            )}
-          </motion.div>
+        <div className="relative min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 overflow-hidden">
+          {/* Decorative Elements */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute top-10 left-10 w-20 h-20 bg-green-200/30 rounded-full blur-xl"></div>
+            <div className="absolute top-40 right-20 w-32 h-32 bg-emerald-200/30 rounded-full blur-xl"></div>
+            <div className="absolute bottom-20 left-1/4 w-24 h-24 bg-teal-200/30 rounded-full blur-xl"></div>
+          </div>
+
+          <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4 py-12">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="text-center max-w-3xl mx-auto"
+            >
+              {/* Success Icon with Animation */}
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", duration: 0.8, delay: 0.2 }}
+                className="mb-8"
+              >
+                <div className="relative inline-block">
+                  <motion.div
+                    animate={{ rotate: [0, 10, -10, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                    className="text-8xl md:text-9xl"
+                  >
+                    🎉
+                  </motion.div>
+                  <div className="absolute -top-4 -right-4 text-5xl md:text-6xl">✨</div>
+                </div>
+              </motion.div>
+
+              {/* Main Heading */}
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="text-4xl md:text-6xl lg:text-7xl font-black mb-6"
+              >
+                <span className="bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                  Geschafft!
+                </span>
+              </motion.h1>
+
+              {/* Subheading */}
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="text-xl md:text-2xl text-gray-700 mb-8 font-medium"
+              >
+                Du bist jetzt Teil unserer süßen Community! 🍬
+              </motion.p>
+
+              {/* Info Boxes */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-8"
+              >
+                {/* Email Confirmation Box */}
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border-2 border-green-200">
+                  <div className="text-4xl mb-3">📧</div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-2">
+                    Bestätige deine E-Mail
+                  </h3>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    Wir haben dir eine E-Mail geschickt. Klicke auf den Bestätigungslink, um deine Anmeldung abzuschließen.
+                  </p>
+                  <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <p className="text-xs text-yellow-800">
+                      💡 <strong>Tipp:</strong> Schau auch im Spam-Ordner nach!
+                    </p>
+                  </div>
+                </div>
+
+                {/* Giveaway Info Box */}
+                {giveawaySubmitted ? (
+                  <div className="bg-gradient-to-br from-pink-100 to-purple-100 rounded-2xl p-6 shadow-xl border-2 border-pink-300">
+                    <div className="text-4xl mb-3">🍀</div>
+                    <h3 className="text-lg font-bold text-gray-800 mb-2">
+                      Gewinnspiel aktiv!
+                    </h3>
+                    <p className="text-sm text-gray-700 leading-relaxed">
+                      Du nimmst ab jetzt jeden Monat automatisch an der Verlosung teil. Viel Glück! 🎁
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-xl border-2 border-emerald-200">
+                    <div className="text-4xl mb-3">🎁</div>
+                    <h3 className="text-lg font-bold text-gray-800 mb-2">
+                      Willkommensgeschenk
+                    </h3>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      Nach deiner Bestätigung hast du jeden Monat die Chance, unsere Süßigkeiten-Box und eine Dubai-Schokolade zu gewinnen.
+                    </p>
+                    <p className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200 text-xs text-blue-800">
+                      💡 <strong>Tipp:</strong> Je länger du im Newsletter bleibst, desto höher sind deine Gewinnchancen!
+                    </p>
+                  </div>
+                )}
+              </motion.div>
+
+              {/* CTA Button */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+              >
+                <a
+                  href="https://sweetsausallerwelt.de"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold py-4 px-8 rounded-full shadow-xl hover:shadow-2xl hover:from-pink-600 hover:to-purple-700 transition-all transform hover:scale-105"
+                >
+                  Zum Shop 🛍️
+                </a>
+              </motion.div>
+
+              {/* Footer Note */}
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1 }}
+                className="text-sm text-gray-500 mt-8"
+              >
+                Danke, dass du dich für SweetsausallerWelt entschieden hast! ❤️
+              </motion.p>
+            </motion.div>
+          </div>
         </div>
       )}
     </>
