@@ -236,7 +236,7 @@ export default function HeroSection({ onCTAClick }) {
                 onClick={handleCloseModal}
                 className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-2.5 md:py-3 px-4 md:px-6 rounded-lg transition-all text-sm md:text-base"
               >
-                {giveawaySubmitted ? "Fertig! 🎉" : "Fertig! a🎉"}
+                {giveawaySubmitted ? "Fertig! 🎉" : "Fertig! 🎉"}
               </button>
             </div>
           </motion.div>
