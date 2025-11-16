@@ -30,6 +30,7 @@ export default function HeroSection({ onCTAClick }) {
   const [giveawaySubmitted, setGiveawaySubmitted] = useState(false);
 
   const currentOffer = { title: "Willkommensgeschenk", emoji: "🎁" };
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const contactForm = useForm({ mode: "onSubmit", reValidateMode: "onBlur" });
   const addressForm = useForm({ mode: "onSubmit", reValidateMode: "onBlur" });
@@ -479,6 +480,31 @@ export default function HeroSection({ onCTAClick }) {
                       )}
                     </div>
 
+                   {/* Gewinnspiel Info */}
+<div className="text-left bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg p-3 md:p-4 border-2 border-pink-200 shadow-sm">
+  <div className="flex items-start justify-between gap-2 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
+    <span className="text-xs md:text-sm text-gray-800 leading-relaxed flex-1">
+      Jeden Monat die Chance auf eine Süßigkeiten-Box! Unter allen aktiven Newsletter-Abonnent:innen verlosen wir in der Regel einmal pro Monat drei <strong>„Sweets aus aller Welt"-Boxen</strong> oder andere Süßigkeiten-Highlights.
+    </span>
+    <svg 
+      className={`w-4 h-4 text-pink-600 transition-transform flex-shrink-0 mt-0.5 ${isExpanded ? 'rotate-180' : ''}`}
+      fill="none" 
+      stroke="currentColor" 
+      viewBox="0 0 24 24"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
+  </div>
+  
+  {isExpanded && (
+    <div className="mt-2 pt-2 border-t border-pink-200">
+      <span className="text-xs md:text-sm text-gray-800 leading-relaxed">
+        <span className="font-semibold text-pink-700">So nimmst du teil:</span> Newsletter anmelden & per E-Mail bestätigen (Double-Opt-In), solange du eingetragen bist, bist du automatisch im Lostopf. Gewinner:innen werden per E-Mail informiert.
+      </span>
+    </div>
+  )}
+</div>
+
                     {/* Consent Checkbox */}
                     <label className="flex items-start gap-2 md:gap-3 text-left bg-white rounded-lg p-3 md:p-4 border-2 border-gray-300 shadow-sm hover:border-gray-400 transition-all cursor-pointer">
                       <input
@@ -490,15 +516,13 @@ export default function HeroSection({ onCTAClick }) {
                         }}
                         className="mt-0.5 h-4 w-4 md:h-5 md:w-5 flex-shrink-0 rounded border-gray-300 text-pink-600 focus:ring-2 focus:ring-pink-500 cursor-pointer"
                       />
-                     <span className="text-xs md:text-sm text-gray-800 leading-relaxed">
+                      <span className="text-xs md:text-sm text-gray-800 leading-relaxed">
                         Mit meiner Anmeldung willige ich ein, den E-Mail-Newsletter von{" "}
-                        <strong>Sweets aus aller Welt</strong> zu erhalten. Der Newsletter informiert
-                        regelmäßig über neue Produkte, Aktionen, Gewinnspiele und Angebote.
-                        Solange ich im Newsletter eingetragen bin, nehme ich automatisch an der
-                        monatlichen Verlosung teil.
-                        Ich kann meine Einwilligung jederzeit mit Wirkung für die Zukunft widerrufen,
-                        z. B. über den Abmeldelink in jeder E-Mail. Weitere Informationen findest du
-                        in der{" "}
+                        <strong>Sweets aus aller Welt</strong> mit Infos zu neuen Produkten, Aktionen,
+                        Gewinnspielen und Angeboten zu erhalten und automatisch an der{" "}
+                        <strong>monatlichen Überraschungsbox-Verlosung</strong> teilzunehmen.
+                        Ich kann meine Einwilligung jederzeit über den Abmeldelink widerrufen.
+                        Details in der{" "}
                         <a
                           href="https://sweetsausallerwelt.de/pages/datenschutzerklarung"
                           target="_blank"
@@ -509,7 +533,6 @@ export default function HeroSection({ onCTAClick }) {
                         </a>
                         .
                       </span>
-
                     </label>
                     {consentError && (
                       <p className="text-red-600 text-xs md:text-sm font-medium -mt-1">{consentError}</p>
